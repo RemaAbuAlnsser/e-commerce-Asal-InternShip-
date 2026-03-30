@@ -1,0 +1,71 @@
+# ===============================
+# GENERAL
+# ===============================
+.DS_Store
+Thumbs.db
+
+# ===============================
+# NODE / ANGULAR
+# ===============================
+node_modules/
+dist/
+.angular/
+.cache/
+coverage/
+*.log
+
+# Angular env files
+src/environments/*.local.ts
+
+# ===============================
+# JAVA / SPRING BOOT
+# ===============================
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# Logs
+logs/
+*.log
+
+# ===============================
+# IDE FILES
+# ===============================
+
+# VS Code
+.vscode/
+
+# IntelliJ
+.idea/
+*.iml
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# ===============================
+# OS FILES
+# ===============================
+.DS_Store
+*.swp
+
+# ===============================
+# ENV FILES (IMPORTANT)
+# ===============================
+.env
+.env.*
+application-local.properties
+application-dev.properties
+
+# ===============================
+# SECURITY
+# ===============================
+*.pem
+*.key
+*.crt
