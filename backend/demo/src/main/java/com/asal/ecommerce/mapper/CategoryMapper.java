@@ -17,6 +17,7 @@ public interface CategoryMapper {
     @Mapping(target = "description", expression = "java(request.getDescription() != null ? request.getDescription().trim() : null)")
     Category toEntity(CategoryCreateRequest request);
     
+    @Mapping(target = "subcategories", ignore = true)
     CategoryResponse toResponse(Category category);
     
     @Mapping(target = "id", ignore = true)
@@ -26,6 +27,7 @@ public interface CategoryMapper {
     @Mapping(target = "name", expression = "java(request.getName().trim())")
     @Mapping(target = "slug", expression = "java(generateSlug(request.getSlug(), request.getName().trim()))")
     @Mapping(target = "description", expression = "java(request.getDescription() != null ? request.getDescription().trim() : null)")
+    @Mapping(target = "isActive", source = "isActive")
     void updateEntity(@MappingTarget Category category, CategoryUpdateRequest request);
     
     default String generateSlug(String providedSlug, String name) {

@@ -121,9 +121,7 @@ class CategoryServiceTest {
     void shouldUpdateCategory_whenValidRequest() {
         // Given
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(testCategory));
-        when(categoryMapper.generateSlug(null, "Updated Electronics")).thenReturn("updated-electronics");
         when(categoryRepository.existsByNameIgnoreCaseAndIdNot("Updated Electronics", 1L)).thenReturn(false);
-        when(categoryRepository.existsBySlugIgnoreCaseAndIdNot("updated-electronics", 1L)).thenReturn(false);
         when(categoryRepository.save(testCategory)).thenReturn(testCategory);
         when(categoryMapper.toResponse(testCategory)).thenReturn(categoryResponse);
 

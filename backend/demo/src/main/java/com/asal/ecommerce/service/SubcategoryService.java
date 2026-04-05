@@ -173,4 +173,14 @@ public class SubcategoryService {
         return subcategories.map(subcategoryMapper::toResponse);
     }
     
+    @Transactional(readOnly = true)
+    public Long getSubcategoryCount() {
+        return subcategoryRepository.count();
+    }
+    
+    @Transactional(readOnly = true)
+    public Long getSubcategoryCountByCategory(Long categoryId) {
+        return subcategoryRepository.countByCategoryId(categoryId);
+    }
+    
 }

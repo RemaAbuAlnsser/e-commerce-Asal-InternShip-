@@ -1,28 +1,527 @@
 <div class="page-container">
+  <!-- Header Section -->
   <div class="page-header">
-    <h1>Categories Management</h1>
-    <p>Manage product categories and subcategories</p>
+    <div class="header-content">
+      <div class="header-text">
+        <h1>Categories Management</h1>
+        <p>Manage product categories and subcategories with ease</p>
+      </div>
+      <div class="header-actions">
+        <button 
+          class="btn-primary" 
+          (click)="viewMode === 'categories' ? openCategoryModal() : openSubcategoryModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Add {{ viewMode === 'categories' ? 'Category' : 'Subcategory' }}
+        </button>
+      </div>
+    </div>
   </div>
-  
+
+  <!-- View Toggle -->
+  <div class="view-toggle">
+    <div class="toggle-buttons">
+      <button 
+        class="toggle-btn" 
+        [class.active]="viewMode === 'categories'"
+        (click)="switchToCategories()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M3 7V5C3 3.89543 3.89543 3 5 3H19C20.1046 3 21 3.89543 21 5V7" stroke="currentColor" stroke-width="2"/>
+          <path d="M3 7H21V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V7Z" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        Categories ({{ totalCategories }})
+      </button>
+      <button 
+        class="toggle-btn" 
+        [class.active]="viewMode === 'subcategories'"
+        (click)="switchToSubcategories()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M8 6H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M8 12H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M8 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M3 6H3.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M3 12H3.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M3 18H3.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Subcategories ({{ totalSubcategories }})
+      </button>
+    </div>
+    
+    <!-- Breadcrumb for subcategories -->
+    <div class="breadcrumb" *ngIf="viewMode === 'subcategories' && selectedCategory">
+      <button class="breadcrumb-link" (click)="switchToCategories()">
+        Categories
+      </button>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-current">{{ selectedCategory.name }}</span>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="search-section">
+    <div class="search-bar">
+      <div class="search-input-container">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+          <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input 
+          type="text" 
+          class="search-input" 
+          placeholder="Search {{ viewMode }}..." 
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="onSearch()"
+          (input)="onSearch()">
+        <button 
+          class="clear-search" 
+          *ngIf="searchTerm" 
+          (click)="clearSearch()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Section -->
   <div class="page-content">
-    <div class="placeholder-content">
-      <div class="placeholder-icon">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Loading State -->
+    <div class="loading-container" *ngIf="loading">
+      <div class="loading-spinner"></div>
+      <p>Loading {{ viewMode }}...</p>
+    </div>
+
+    <!-- Categories Grid -->
+    <div class="categories-grid" *ngIf="!loading && viewMode === 'categories'">
+      <div class="category-card" *ngFor="let category of categories">
+        <div class="category-image" *ngIf="category.imageUrl">
+          <img [src]="getImageUrl(category.imageUrl)" [alt]="category.name">
+        </div>
+        <div class="card-header">
+          <div class="category-info">
+            <h3 class="category-name">{{ category.name }}</h3>
+            <p class="category-description">{{ category.description }}</p>
+            <span class="category-slug">/{{ category.slug }}</span>
+          </div>
+          <div class="category-status">
+            <button 
+              class="status-toggle" 
+              [class.active]="category.isActive"
+              (click)="toggleCategoryStatus(category)">
+              {{ category.isActive ? 'Active' : 'Inactive' }}
+            </button>
+          </div>
+        </div>
+        
+        <div class="card-actions">
+          <button class="btn-secondary" (click)="viewCategorySubcategories(category)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            View Subcategories
+          </button>
+          <button class="btn-edit" (click)="openCategoryModal(category)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M18.5 2.50023C18.8978 2.1024 19.4374 1.87891 20 1.87891C20.5626 1.87891 21.1022 2.1024 21.5 2.50023C21.8978 2.89805 22.1213 3.43762 22.1213 4.00023C22.1213 4.56284 21.8978 5.1024 21.5 5.50023L12 15.0002L8 16.0002L9 12.0002L18.5 2.50023Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Edit
+          </button>
+          <button class="btn-delete" (click)="confirmDelete('category', category)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subcategories Grid -->
+    <div class="subcategories-grid" *ngIf="!loading && viewMode === 'subcategories'">
+      <div class="subcategory-card" *ngFor="let subcategory of subcategories">
+        <div class="subcategory-image" *ngIf="subcategory.imageUrl">
+          <img [src]="getImageUrl(subcategory.imageUrl)" [alt]="subcategory.name">
+        </div>
+        <div class="card-header">
+          <div class="subcategory-info">
+            <h3 class="subcategory-name">{{ subcategory.name }}</h3>
+            <p class="subcategory-description">{{ subcategory.description }}</p>
+            <div class="subcategory-meta">
+              <span class="subcategory-slug">/{{ subcategory.slug }}</span>
+              <span class="category-badge" *ngIf="subcategory.categoryName">{{ subcategory.categoryName }}</span>
+            </div>
+          </div>
+          <div class="subcategory-status">
+            <button 
+              class="status-toggle" 
+              [class.active]="subcategory.isActive"
+              (click)="toggleSubcategoryStatus(subcategory)">
+              {{ subcategory.isActive ? 'Active' : 'Inactive' }}
+            </button>
+          </div>
+        </div>
+        
+        <div class="card-actions">
+          <button class="btn-edit" (click)="openSubcategoryModal(subcategory)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M18.5 2.50023C18.8978 2.1024 19.4374 1.87891 20 1.87891C20.5626 1.87891 21.1022 2.1024 21.5 2.50023C21.8978 2.89805 22.1213 3.43762 22.1213 4.00023C22.1213 4.56284 21.8978 5.1024 21.5 5.50023L12 15.0002L8 16.0002L9 12.0002L18.5 2.50023Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Edit
+          </button>
+          <button class="btn-delete" (click)="confirmDelete('subcategory', subcategory)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!loading && ((viewMode === 'categories' && categories.length === 0) || (viewMode === 'subcategories' && subcategories.length === 0))">
+      <div class="empty-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
           <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2"/>
           <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2"/>
           <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2"/>
         </svg>
       </div>
-      <h3>Categories Management</h3>
-      <p>This page will contain category management functionality including:</p>
-      <ul>
-        <li>Create new categories</li>
-        <li>Edit existing categories</li>
-        <li>Manage subcategories</li>
-        <li>Category hierarchy</li>
-        <li>Category status management</li>
-      </ul>
-      <button class="cta-button">Coming Soon</button>
+      <h3>No {{ viewMode }} found</h3>
+      <p *ngIf="searchTerm">No {{ viewMode }} match your search criteria.</p>
+      <p *ngIf="!searchTerm">Get started by creating your first {{ viewMode === 'categories' ? 'category' : 'subcategory' }}.</p>
+      <button 
+        class="btn-primary" 
+        (click)="viewMode === 'categories' ? openCategoryModal() : openSubcategoryModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Add {{ viewMode === 'categories' ? 'Category' : 'Subcategory' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="!loading && totalPages > 1">
+    <button 
+      class="pagination-btn" 
+      [disabled]="currentPage === 0" 
+      (click)="goToPage(currentPage - 1)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Previous
+    </button>
+    
+    <div class="pagination-info">
+      Page {{ currentPage + 1 }} of {{ totalPages }} ({{ totalElements }} total)
+    </div>
+    
+    <button 
+      class="pagination-btn" 
+      [disabled]="currentPage >= totalPages - 1" 
+      (click)="goToPage(currentPage + 1)">
+      Next
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal-overlay" *ngIf="showCategoryModal" (click)="closeCategoryModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ isEditingCategory ? 'Edit Category' : 'Add New Category' }}</h2>
+      <button class="modal-close" (click)="closeCategoryModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    
+    <form [formGroup]="categoryForm" (ngSubmit)="saveCategoryForm()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="categoryName">Category Name *</label>
+          <input 
+            id="categoryName"
+            type="text" 
+            class="form-input" 
+            formControlName="name"
+            placeholder="Enter category name">
+          <div class="error-message" *ngIf="categoryForm.get('name')?.invalid && categoryForm.get('name')?.touched">
+            <span *ngIf="categoryForm.get('name')?.errors?.['required']">Category name is required</span>
+            <span *ngIf="categoryForm.get('name')?.errors?.['minlength']">Category name must be at least 2 characters</span>
+          </div>
+        </div>
+        
+        
+        <div class="form-group">
+          <label for="categoryDescription">Description *</label>
+          <textarea 
+            id="categoryDescription"
+            class="form-textarea" 
+            formControlName="description"
+            placeholder="Enter category description"
+            rows="4"></textarea>
+          <div class="error-message" *ngIf="categoryForm.get('description')?.invalid && categoryForm.get('description')?.touched">
+            <span *ngIf="categoryForm.get('description')?.errors?.['required']">Description is required</span>
+            <span *ngIf="categoryForm.get('description')?.errors?.['minlength']">Description must be at least 5 characters</span>
+          </div>
+        </div>
+        
+        <div class="form-group" *ngIf="isEditingCategory">
+          <label for="categoryStatus">Category Status</label>
+          <div class="status-toggle-container">
+            <label class="status-switch">
+              <input 
+                type="checkbox" 
+                formControlName="isActive"
+                id="categoryStatus">
+              <span class="status-slider"></span>
+              <span class="status-label">{{ categoryForm.get('isActive')?.value ? 'Active' : 'Inactive' }}</span>
+            </label>
+            <div class="status-warning" *ngIf="!categoryForm.get('isActive')?.value">
+              <small>⚠️ Deactivating this category will also deactivate all its subcategories</small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="categoryImage">Category Image (Optional)</label>
+          <div class="image-upload-container">
+            <input 
+              id="categoryImage"
+              type="file" 
+              class="file-input" 
+              accept="image/*"
+              (change)="onCategoryImageSelected($event)"
+              #categoryImageInput>
+            
+            <!-- Show upload area only when no image is selected -->
+            <div class="file-upload-area" (click)="categoryImageInput.click()" *ngIf="!categoryImagePreview">
+              <div class="upload-content">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                  <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M17 8L12 3L7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M12 3V15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <p>Click to upload image</p>
+                <span>PNG, JPG, GIF up to 10MB</span>
+              </div>
+            </div>
+            
+            <!-- Show image preview when image is selected -->
+            <div class="image-preview" *ngIf="categoryImagePreview">
+              <img [src]="categoryImagePreview" alt="Category preview">
+              <div class="image-actions">
+                <button type="button" class="change-image" (click)="categoryImageInput.click()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M18.5 2.50023C18.8978 2.1024 19.4374 1.87891 20 1.87891C20.5626 1.87891 21.1022 2.1024 21.5 2.50023C21.8978 2.89805 22.1213 3.43762 22.1213 4.00023C22.1213 4.56284 21.8978 5.1024 21.5 5.50023L12 15.0002L8 16.0002L9 12.0002L18.5 2.50023Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Change
+                </button>
+                <button type="button" class="remove-image" (click)="removeCategoryImage()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeCategoryModal()">Cancel</button>
+        <button 
+          type="submit" 
+          class="btn-primary" 
+          [disabled]="categoryForm.invalid || submitting">
+          <span *ngIf="submitting" class="loading-spinner small"></span>
+          {{ isEditingCategory ? 'Update' : 'Create' }} Category
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Subcategory Modal -->
+<div class="modal-overlay" *ngIf="showSubcategoryModal" (click)="closeSubcategoryModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ isEditingSubcategory ? 'Edit Subcategory' : 'Add New Subcategory' }}</h2>
+      <button class="modal-close" (click)="closeSubcategoryModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    
+    <form [formGroup]="subcategoryForm" (ngSubmit)="saveSubcategoryForm()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="subcategoryName">Subcategory Name *</label>
+          <input 
+            id="subcategoryName"
+            type="text" 
+            class="form-input" 
+            formControlName="name"
+            placeholder="Enter subcategory name">
+          <div class="error-message" *ngIf="subcategoryForm.get('name')?.invalid && subcategoryForm.get('name')?.touched">
+            <span *ngIf="subcategoryForm.get('name')?.errors?.['required']">Subcategory name is required</span>
+            <span *ngIf="subcategoryForm.get('name')?.errors?.['minlength']">Subcategory name must be at least 2 characters</span>
+          </div>
+        </div>
+        
+        
+        <div class="form-group">
+          <label for="subcategoryDescription">Description *</label>
+          <textarea 
+            id="subcategoryDescription"
+            class="form-textarea" 
+            formControlName="description"
+            placeholder="Enter subcategory description"
+            rows="4"></textarea>
+          <div class="error-message" *ngIf="subcategoryForm.get('description')?.invalid && subcategoryForm.get('description')?.touched">
+            <span *ngIf="subcategoryForm.get('description')?.errors?.['required']">Description is required</span>
+            <span *ngIf="subcategoryForm.get('description')?.errors?.['minlength']">Description must be at least 5 characters</span>
+          </div>
+        </div>
+        
+        <div class="form-group" *ngIf="isEditingSubcategory">
+          <label for="subcategoryStatus">Subcategory Status</label>
+          <div class="status-toggle-container">
+            <label class="status-switch">
+              <input 
+                type="checkbox" 
+                formControlName="isActive"
+                id="subcategoryStatus">
+              <span class="status-slider"></span>
+              <span class="status-label">{{ subcategoryForm.get('isActive')?.value ? 'Active' : 'Inactive' }}</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="subcategoryImage">Subcategory Image (Optional)</label>
+          <div class="image-upload-container">
+            <input 
+              id="subcategoryImage"
+              type="file" 
+              class="file-input" 
+              accept="image/*"
+              (change)="onSubcategoryImageSelected($event)"
+              #subcategoryImageInput>
+            
+            <!-- Show upload area only when no image is selected -->
+            <div class="file-upload-area" (click)="subcategoryImageInput.click()" *ngIf="!subcategoryImagePreview">
+              <div class="upload-content">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                  <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M17 8L12 3L7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M12 3V15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <p>Click to upload image</p>
+                <span>PNG, JPG, GIF up to 10MB</span>
+              </div>
+            </div>
+            
+            <!-- Show image preview when image is selected -->
+            <div class="image-preview" *ngIf="subcategoryImagePreview">
+              <img [src]="subcategoryImagePreview" alt="Subcategory preview">
+              <div class="image-actions">
+                <button type="button" class="change-image" (click)="subcategoryImageInput.click()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M18.5 2.50023C18.8978 2.1024 19.4374 1.87891 20 1.87891C20.5626 1.87891 21.1022 2.1024 21.5 2.50023C21.8978 2.89805 22.1213 3.43762 22.1213 4.00023C22.1213 4.56284 21.8978 5.1024 21.5 5.50023L12 15.0002L8 16.0002L9 12.0002L18.5 2.50023Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Change
+                </button>
+                <button type="button" class="remove-image" (click)="removeSubcategoryImage()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="categorySelect">Parent Category *</label>
+          <select 
+            id="categorySelect"
+            class="form-select" 
+            formControlName="categoryId">
+            <option value="">Select a category</option>
+            <option *ngFor="let category of categories" [value]="category.id">
+              {{ category.name }}
+            </option>
+          </select>
+          <div class="error-message" *ngIf="subcategoryForm.get('categoryId')?.invalid && subcategoryForm.get('categoryId')?.touched">
+            <span *ngIf="subcategoryForm.get('categoryId')?.errors?.['required']">Please select a parent category</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeSubcategoryModal()">Cancel</button>
+        <button 
+          type="submit" 
+          class="btn-primary" 
+          [disabled]="subcategoryForm.invalid || submitting">
+          <span *ngIf="submitting" class="loading-spinner small"></span>
+          {{ isEditingSubcategory ? 'Update' : 'Create' }} Subcategory
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="modal small" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Confirm Delete</h2>
+      <button class="modal-close" (click)="closeDeleteModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="delete-warning">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+          <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <p>Are you sure you want to delete <strong>"{{ itemToDelete?.item?.name }}"</strong>?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="closeDeleteModal()">Cancel</button>
+      <button 
+        type="button" 
+        class="btn-danger" 
+        [disabled]="submitting"
+        (click)="executeDelete()">
+        <span *ngIf="submitting" class="loading-spinner small"></span>
+        Delete {{ itemToDelete?.type || 'item' }}
+      </button>
     </div>
   </div>
 </div>

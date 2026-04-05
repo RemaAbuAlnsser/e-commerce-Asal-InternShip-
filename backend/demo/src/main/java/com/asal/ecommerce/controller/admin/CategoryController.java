@@ -2,11 +2,13 @@ package com.asal.ecommerce.controller.admin;
 
 import com.asal.ecommerce.dto.*;
 import com.asal.ecommerce.service.CategoryService;
+import com.asal.ecommerce.service.ImageUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.Valid;
 
@@ -16,6 +18,9 @@ public class CategoryController {
     
     @Autowired
     private CategoryService categoryService;
+    
+    @Autowired
+    private ImageUploadService imageUploadService;
     
     @PostMapping
     public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CategoryCreateRequest request) {
@@ -97,6 +102,29 @@ public class CategoryController {
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             throw e; // Let GlobalExceptionHandler handle it
+        }
+    }
+    
+    @GetMapping("/count")
+    public ResponseEntity<Long> getCategoryCount() {
+        try {
+            Long count = categoryService.getCategoryCount();
+            return ResponseEntity.ok(count);
+        } catch (RuntimeException e) {
+            throw e; // Let GlobalExceptionHandler handle it
+        }
+    }
+    
+    @PostMapping("/upload-image")
+    public ResponseEntity<ImageUploadResponse> uploadCategoryImage(@RequestParam("image") MultipartFile file) {
+        try {
+            String imageUrl = imageUploadService.uploadCategoryImage(file);
+            return ResponseEntity.ok(ImageUploadResponse.success(imageUrl));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ImageUploadResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ImageUploadResponse.error("Failed to upload image"));
         }
     }
 }

@@ -22,48 +22,73 @@ public class CategoryService {
     
     @Autowired
     private CategoryMapper categoryMapper;
-    
+
+    /**
+     * Creates a new category.
+     *
+     * @param request the category creation request
+     * @return the created category response
+     */
     public CategoryResponse createCategory(CategoryCreateRequest request) {
         // Create entity using mapper
         Category category = categoryMapper.toEntity(request);
-        
+
         // Validate duplicate name
         if (categoryRepository.existsByNameIgnoreCase(category.getName())) {
             throw new RuntimeException("Category with name '" + category.getName() + "' already exists");
         }
-        
+
         // Validate duplicate slug
         if (categoryRepository.existsBySlugIgnoreCase(category.getSlug())) {
             throw new RuntimeException("Category with slug '" + category.getSlug() + "' already exists");
         }
-        
+
         Category savedCategory = categoryRepository.save(category);
         return categoryMapper.toResponse(savedCategory);
     }
-    
+
+    /**
+     * Updates an existing category.
+     *
+     * @param id      the category ID
+     * @param request the category update request
+     * @return the updated category response
+     */
     public CategoryResponse updateCategory(Long id, CategoryUpdateRequest request) {
         Category category = categoryRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Category not found with id: " + id));
-        
-        // Create temporary category to get validated name and slug
-        String name = request.getName().trim();
-        String slug = categoryMapper.generateSlug(request.getSlug(), name);
-        
-        // Validate duplicate name (excluding current category)
-        if (categoryRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
-            throw new RuntimeException("Category with name '" + name + "' already exists");
+                .orElseThrow(() -> new RuntimeException("Category not found with id: " + id));
+
+        // Check if name is being changed and if new name already exists
+        if (!category.getName().equals(request.getName())) {
+            if (categoryRepository.existsByNameIgnoreCaseAndIdNot(request.getName(), id)) {
+                throw new RuntimeException("Category with name '" + request.getName() + "' already exists");
+            }
         }
-        
-        // Validate duplicate slug (excluding current category)
-        if (categoryRepository.existsBySlugIgnoreCaseAndIdNot(slug, id)) {
-            throw new RuntimeException("Category with slug '" + slug + "' already exists");
+
+        // Check if slug is being changed and if new slug already exists
+        if (request.getSlug() != null && !category.getSlug().equals(request.getSlug())) {
+            if (categoryRepository.existsBySlugIgnoreCaseAndIdNot(request.getSlug(), id)) {
+                throw new RuntimeException("Category with slug '" + request.getSlug() + "' already exists");
+            }
         }
+
+        // Store the old active status to check if it changed
+        boolean wasActive = category.getIsActive();
         
-        // Update entity using mapper
         categoryMapper.updateEntity(category, request);
-        
         Category savedCategory = categoryRepository.save(category);
+        
+        // If category was deactivated, deactivate all its subcategories
+        if (wasActive && !savedCategory.getIsActive()) {
+            deactivateSubcategoriesByCategory(id);
+        }
+        
         return categoryMapper.toResponse(savedCategory);
+    }
+    
+    private void deactivateSubcategoriesByCategory(Long categoryId) {
+        // Update all subcategories to inactive for the given category
+        categoryRepository.deactivateSubcategoriesByCategory(categoryId);
     }
     
     @Transactional(readOnly = true)
@@ -109,6 +134,12 @@ public class CategoryService {
         
         category.setIsActive(isActive);
         Category savedCategory = categoryRepository.save(category);
+        
+        // If category is being deactivated, deactivate all its subcategories
+        if (!isActive) {
+            deactivateSubcategoriesByCategory(id);
+        }
+        
         return categoryMapper.toResponse(savedCategory);
     }
     
@@ -132,6 +163,11 @@ public class CategoryService {
         Category category = categoryRepository.findBySlugAndIsActiveTrue(slug)
             .orElseThrow(() -> new RuntimeException("Active category not found with slug: " + slug));
         return categoryMapper.toResponse(category);
+    }
+    
+    @Transactional(readOnly = true)
+    public Long getCategoryCount() {
+        return categoryRepository.count();
     }
     
 }

@@ -30,6 +30,9 @@ class CategoryRepositoryTest {
 
     @BeforeEach
     void setUp() {
+        // Clean up database before each test
+        categoryRepository.deleteAll();
+        
         testCategory = new Category();
         testCategory.setName("Electronics");
         testCategory.setSlug("electronics");

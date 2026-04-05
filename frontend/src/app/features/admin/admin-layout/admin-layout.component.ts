@@ -121,6 +121,7 @@ export class AdminLayoutComponent implements OnInit {
   logout() {
     if (this.isBrowser) {
       sessionStorage.removeItem('admin');
+      localStorage.removeItem('adminToken');
     }
     this.router.navigate(['/admin/login']);
   }

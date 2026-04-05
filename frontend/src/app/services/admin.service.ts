@@ -11,6 +11,8 @@ export interface AdminLoginRequest {
 export interface AdminLoginResponse {
   success: boolean;
   message: string;
+  token?: string;
+  expiresIn?: number;
   admin?: {
     id: number;
     email: string;

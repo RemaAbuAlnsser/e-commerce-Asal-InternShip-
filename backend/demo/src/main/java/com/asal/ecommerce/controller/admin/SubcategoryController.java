@@ -2,11 +2,13 @@ package com.asal.ecommerce.controller.admin;
 
 import com.asal.ecommerce.dto.*;
 import com.asal.ecommerce.service.SubcategoryService;
+import com.asal.ecommerce.service.ImageUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.Valid;
 
@@ -16,6 +18,9 @@ public class SubcategoryController {
     
     @Autowired
     private SubcategoryService subcategoryService;
+    
+    @Autowired
+    private ImageUploadService imageUploadService;
     
     @PostMapping
     public ResponseEntity<SubcategoryResponse> createSubcategory(@Valid @RequestBody SubcategoryCreateRequest request) {
@@ -112,6 +117,39 @@ public class SubcategoryController {
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             throw e; // Let GlobalExceptionHandler handle it
+        }
+    }
+    
+    @GetMapping("/count")
+    public ResponseEntity<Long> getSubcategoryCount() {
+        try {
+            Long count = subcategoryService.getSubcategoryCount();
+            return ResponseEntity.ok(count);
+        } catch (RuntimeException e) {
+            throw e; // Let GlobalExceptionHandler handle it
+        }
+    }
+    
+    @GetMapping("/count/category/{categoryId}")
+    public ResponseEntity<Long> getSubcategoryCountByCategory(@PathVariable Long categoryId) {
+        try {
+            Long count = subcategoryService.getSubcategoryCountByCategory(categoryId);
+            return ResponseEntity.ok(count);
+        } catch (RuntimeException e) {
+            throw e; // Let GlobalExceptionHandler handle it
+        }
+    }
+    
+    @PostMapping("/upload-image")
+    public ResponseEntity<ImageUploadResponse> uploadSubcategoryImage(@RequestParam("image") MultipartFile file) {
+        try {
+            String imageUrl = imageUploadService.uploadSubcategoryImage(file);
+            return ResponseEntity.ok(ImageUploadResponse.success(imageUrl));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ImageUploadResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ImageUploadResponse.error("Failed to upload image"));
         }
     }
 }

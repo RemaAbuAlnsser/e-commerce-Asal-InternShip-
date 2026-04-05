@@ -46,9 +46,12 @@ export class AdminLoginComponent {
       next: (response) => {
         this.isLoading = false;
         if (response.success) {
-          // Store admin data if needed (localStorage, sessionStorage, etc.)
+          // Store admin data and JWT token
           if (response.admin) {
             sessionStorage.setItem('admin', JSON.stringify(response.admin));
+          }
+          if (response.token) {
+            localStorage.setItem('adminToken', response.token);
           }
           // Navigate to admin dashboard
           this.router.navigate(['/admin/dashboard']);
