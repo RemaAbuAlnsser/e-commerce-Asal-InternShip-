@@ -91,6 +91,8 @@
   position: relative;
   display: flex;
   align-items: center;
+  cursor: text !important;
+  pointer-events: auto;
 }
 
 .input-icon {
@@ -99,6 +101,7 @@
   color: #a0aec0;
   z-index: 2;
   transition: color 0.3s ease;
+  pointer-events: none;
 }
 
 .form-control {
@@ -111,6 +114,14 @@
   transition: all 0.3s ease;
   box-sizing: border-box;
   font-weight: 500;
+  cursor: text !important;
+  pointer-events: auto !important;
+}
+
+.form-control:hover {
+  border-color: #cbd5e1;
+  background: white;
+  cursor: text !important;
 }
 
 .form-control:focus {
@@ -119,6 +130,7 @@
   background: white;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   transform: translateY(-1px);
+  cursor: text !important;
 }
 
 .form-control:focus + .input-icon,
@@ -344,4 +356,18 @@
   .login-btn {
     padding: 16px;
   }
+}
+
+/* Field Error Styles */
+.field-error {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #e53e3e;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.field-error span {
+  font-weight: 500;
 }

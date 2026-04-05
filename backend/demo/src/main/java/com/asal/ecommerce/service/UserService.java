@@ -6,6 +6,7 @@ import com.asal.ecommerce.model.User;
 import com.asal.ecommerce.repository.UserRepository;
 import com.asal.ecommerce.enums.Role;
 import com.asal.ecommerce.enums.Provider;
+import com.asal.ecommerce.mapper.AuthMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,9 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
     
+    @Autowired
+    private AuthMapper authMapper;
+    
     public AdminLoginResponse adminLogin(AdminLoginRequest request) {
         try {
             System.out.println("Admin login attempt for email: " + request.getEmail());
@@ -25,7 +29,7 @@ public class UserService {
             Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
             if (!userOpt.isPresent()) {
                 System.out.println("No user found with email: " + request.getEmail());
-                return new AdminLoginResponse(false, "Invalid email or password", null);
+                return authMapper.toAdminLoginResponse(null, false, "Invalid email or password");
             }
             
             User user = userOpt.get();
@@ -34,40 +38,35 @@ public class UserService {
             // Step 2: Check if user role is ADMIN
             if (user.getRole() != Role.ADMIN) {
                 System.out.println("User is not an admin - Role: " + user.getRole());
-                return new AdminLoginResponse(false, "Access denied: Admin privileges required", null);
+                return authMapper.toAdminLoginResponse(null, false, "Access denied: Admin privileges required");
             }
             
             // Step 3: Check if provider is LOCAL
             if (user.getProvider() != Provider.LOCAL) {
                 System.out.println("User provider is not LOCAL - Provider: " + user.getProvider());
-                return new AdminLoginResponse(false, "Invalid login method for admin account", null);
+                return authMapper.toAdminLoginResponse(null, false, "Invalid login method for admin account");
             }
             
             // Step 4: Check if account is active
             if (!user.isActive()) {
                 System.out.println("Admin account is deactivated");
-                return new AdminLoginResponse(false, "Account is deactivated", null);
+                return authMapper.toAdminLoginResponse(null, false, "Account is deactivated");
             }
             
             // Step 5: Compare password manually
             if (!request.getPassword().equals(user.getPassword())) {
                 System.out.println("Password mismatch for user: " + user.getEmail());
-                return new AdminLoginResponse(false, "Invalid password", null);
+                return authMapper.toAdminLoginResponse(null, false, "Invalid password");
             }
             
             // All checks passed - successful login
             System.out.println("Admin login successful for user: " + user.getEmail());
-            AdminLoginResponse.AdminData adminData = new AdminLoginResponse.AdminData(
-                user.getId(),
-                user.getEmail(),
-                user.getName()
-            );
-            return new AdminLoginResponse(true, "Login successful", adminData);
+            return authMapper.toAdminLoginResponse(user, true, "Login successful");
             
         } catch (Exception e) {
             System.err.println("Admin login error: " + e.getMessage());
             e.printStackTrace();
-            return new AdminLoginResponse(false, "Login failed: " + e.getMessage(), null);
+            return authMapper.toAdminLoginResponse(null, false, "Login failed: " + e.getMessage());
         }
     }
     
@@ -77,19 +76,11 @@ public class UserService {
         if (existingUser.isPresent()) {
             // Update existing user
             User user = existingUser.get();
-            user.setEmail(email);
-            user.setName(name);
+            authMapper.updateGoogleUser(user, email, name);
             return userRepository.save(user);
         } else {
             // Create new Google user
-            User newUser = new User();
-            newUser.setEmail(email);
-            newUser.setName(name);
-            newUser.setGoogleId(googleId);
-            newUser.setRole(Role.USER);
-            newUser.setProvider(Provider.GOOGLE);
-            newUser.setActive(true);
-            // No password for Google users
+            User newUser = authMapper.createGoogleUser(email, name, googleId);
             return userRepository.save(newUser);
         }
     }
@@ -98,13 +89,7 @@ public class UserService {
         try {
             // Create default admin if none exists
             if (userRepository.countByRole(Role.ADMIN) == 0) {
-                User defaultAdmin = new User();
-                defaultAdmin.setEmail("admin@example.com");
-                defaultAdmin.setPassword("admin123");
-                defaultAdmin.setName("Default Admin");
-                defaultAdmin.setRole(Role.ADMIN);
-                defaultAdmin.setProvider(Provider.LOCAL);
-                defaultAdmin.setActive(true);
+                User defaultAdmin = authMapper.createDefaultAdmin();
                 User savedAdmin = userRepository.save(defaultAdmin);
                 System.out.println("Default admin created successfully with ID: " + savedAdmin.getId());
             } else {

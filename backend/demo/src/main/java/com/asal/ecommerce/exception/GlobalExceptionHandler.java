@@ -1,6 +1,7 @@
 package com.asal.ecommerce.exception;
 
 import com.asal.ecommerce.dto.AdminLoginResponse;
+import com.asal.ecommerce.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -24,6 +25,15 @@ public class GlobalExceptionHandler {
         AdminLoginResponse response = new AdminLoginResponse(false, errorMessage, null);
         
         System.out.println("Validation error: " + errorMessage);
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse<Object>> handleRuntimeException(RuntimeException ex) {
+        String errorMessage = ex.getMessage();
+        ApiResponse<Object> response = ApiResponse.error(errorMessage);
+        
+        System.err.println("Runtime error: " + errorMessage);
         return ResponseEntity.badRequest().body(response);
     }
 

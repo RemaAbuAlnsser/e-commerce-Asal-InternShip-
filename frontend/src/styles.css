@@ -1,1 +1,20 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* Global input cursor fix */
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+  cursor: text !important;
+}
+
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="text"]:hover {
+  cursor: text !important;
+}
+
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="text"]:focus {
+  cursor: text !important;
+}

@@ -1,105 +1,92 @@
 <div class="login-container">
   <div class="login-card">
+    
+    <!-- Header -->
     <div class="login-header">
       <div class="admin-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 4L13.5 7.5C13.1 8.4 12.2 9 11.2 9H8.8C7.8 9 6.9 8.4 6.5 7.5L5 4L3 7V9H1V11H3V20C3 21.1 3.9 22 5 22H8V20H6V11H8.2L9.7 15.4C10.1 16.3 11 17 12 17C13 17 13.9 16.3 14.3 15.4L15.8 11H18V20H16V22H19C20.1 22 21 21.1 21 20V11H23V9H21Z" fill="currentColor"/>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2Z" fill="currentColor"/>
         </svg>
       </div>
       <h2>Admin Portal</h2>
       <p class="subtitle">Welcome back! Please sign in to continue</p>
     </div>
 
+    <!-- Form -->
     <form (ngSubmit)="onLogin()" #loginForm="ngForm" class="login-form">
+
+      <!-- Email -->
       <div class="form-group">
-        <label for="email">Email </label>
+        <label>Email</label>
         <div class="input-container">
-          <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- ICON -->
+          <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2"/>
+            <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2"/>
           </svg>
+
           <input 
-            type="email" 
-            id="email" 
+            type="email"
             name="email"
-            [(ngModel)]="email" 
-            required 
+            [(ngModel)]="email"
+            required
             class="form-control"
-            [disabled]="isLoading"
             placeholder="Enter your email"
+            #emailInput
+            #emailField="ngModel"
           >
         </div>
+
+        <div class="field-error" *ngIf="emailField.invalid && (emailField.touched || submitted)">
+          <span>Email is required</span>
+        </div>
       </div>
-      
+
+      <!-- Password -->
       <div class="form-group">
-        <label for="password">Password</label>
+        <label>Password</label>
         <div class="input-container">
-          <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
-            <circle cx="12" cy="16" r="1" fill="currentColor"/>
+
+          <!-- ICON -->
+          <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2"/>
             <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2"/>
           </svg>
+
           <input 
-            type="password" 
-            id="password" 
+            type="password"
             name="password"
-            [(ngModel)]="password" 
-            required 
+            [(ngModel)]="password"
+            required
             class="form-control"
-            [disabled]="isLoading"
             placeholder="Enter your password"
+            #passwordField="ngModel"
           >
         </div>
+
+        <div class="field-error" *ngIf="passwordField.invalid && (passwordField.touched || submitted)">
+          <span>Password is required</span>
+        </div>
       </div>
-      
+
+      <!-- Error -->
       <div class="error-message" *ngIf="errorMessage">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-          <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
-          <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
-        </svg>
         {{ errorMessage }}
       </div>
-      
+
+      <!-- Button -->
       <button 
-        type="submit" 
+        type="submit"
         class="login-btn"
-        [disabled]="!loginForm.form.valid || isLoading"
+        [disabled]="isLoading"
         [class.loading]="isLoading"
       >
-        <span *ngIf="isLoading" class="loading-content">
-          <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2V6M12 18V22M4.93 4.93L7.76 7.76M16.24 16.24L19.07 19.07M2 12H6M18 12H22M4.93 19.07L7.76 16.24M16.24 7.76L19.07 4.93" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Signing in...
-        </span>
-        <span *ngIf="!isLoading" class="login-content">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M15 3H19C20.1 3 21 3.9 21 5V19C21 20.1 20.1 21 19 21H15M10 17L15 12L10 7M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Sign In
-        </span>
+        <span *ngIf="isLoading">Signing in...</span>
+        <span *ngIf="!isLoading">Sign In</span>
       </button>
+
     </form>
-    
-    <!-- <div class="demo-credentials">
-      <div class="demo-header">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-          <path d="M9,12L11,14L15,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <strong>Demo Credentials</strong>
-      </div>
-      <div class="credentials-info">
-        <p><span class="label">Email:</span> admin&#64;example.com</p>
-        <p><span class="label">Password:</span> admin123</p>
-      </div>
-    </div>
-  </div>
-   -->
-  <div class="background-decoration">
-    <div class="circle circle-1"></div>
-    <div class="circle circle-2"></div>
-    <div class="circle circle-3"></div>
+
   </div>
 </div>

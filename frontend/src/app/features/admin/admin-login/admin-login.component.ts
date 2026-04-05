@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -12,10 +12,13 @@ import { AdminService, AdminLoginRequest } from '../../../services/admin.service
   styleUrl: './admin-login.component.css'
 })
 export class AdminLoginComponent {
+  @ViewChild('emailInput') emailInput!: ElementRef;
+  
   email = '';
   password = '';
   isLoading = false;
   errorMessage = '';
+  submitted = false;
 
   constructor(
     private router: Router,
@@ -23,8 +26,11 @@ export class AdminLoginComponent {
   ) {}
 
   onLogin() {
+    this.submitted = true;
+    
     if (!this.email || !this.password) {
       this.errorMessage = 'Please fill in all fields';
+      this.focusEmailInput();
       return;
     }
 
@@ -48,13 +54,21 @@ export class AdminLoginComponent {
           this.router.navigate(['/admin/dashboard']);
         } else {
           this.errorMessage = response.message;
+          this.focusEmailInput();
         }
       },
       error: (error) => {
         this.isLoading = false;
         this.errorMessage = 'Invalid email or password';
+        this.focusEmailInput();
         console.error('Login error:', error);
       }
     });
   }
+
+  private focusEmailInput() {
+  setTimeout(() => {
+    this.emailInput?.nativeElement?.focus();
+  }, 0);
+}
 }
