@@ -1,4 +1,4 @@
-package com.asal.ecommerce.controller;
+package com.asal.ecommerce.controller.customer;
 
 import com.asal.ecommerce.dto.GoogleLoginRequest;
 import com.asal.ecommerce.dto.GoogleLoginResponse;

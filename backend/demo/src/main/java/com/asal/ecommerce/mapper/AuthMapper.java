@@ -4,10 +4,15 @@ import com.asal.ecommerce.dto.AdminLoginResponse;
 import com.asal.ecommerce.model.User;
 import com.asal.ecommerce.enums.Role;
 import com.asal.ecommerce.enums.Provider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 public class AuthMapper {
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     
     public AdminLoginResponse toAdminLoginResponse(User user, boolean success, String message) {
         if (!success || user == null) {
@@ -42,7 +47,7 @@ public class AuthMapper {
     public User createDefaultAdmin() {
         User admin = new User();
         admin.setEmail("admin@example.com");
-        admin.setPassword("admin123");
+        admin.setPassword(passwordEncoder.encode("admin123"));
         admin.setName("Default Admin");
         admin.setRole(Role.ADMIN);
         admin.setProvider(Provider.LOCAL);

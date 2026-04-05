@@ -33,6 +33,14 @@ public interface SubcategoryRepository extends JpaRepository<Subcategory, Long> 
     @Query("SELECT s FROM Subcategory s WHERE s.category.id = :categoryId AND LOWER(s.name) LIKE LOWER(CONCAT('%', :name, '%'))")
     Page<Subcategory> findByCategoryIdAndNameContainingIgnoreCase(@Param("categoryId") Long categoryId, @Param("name") String name, Pageable pageable);
     
+    // Customer public methods - active data only
+    Page<Subcategory> findByIsActiveTrue(Pageable pageable);
+    
+    Optional<Subcategory> findBySlugAndIsActiveTrue(String slug);
+    
+    @Query("SELECT s FROM Subcategory s WHERE s.category.slug = :categorySlug AND s.isActive = true")
+    Page<Subcategory> findByCategorySlugAndIsActiveTrue(@Param("categorySlug") String categorySlug, Pageable pageable);
+    
     Page<Subcategory> findByIsActive(Boolean isActive, Pageable pageable);
     
     @Query("SELECT s FROM Subcategory s WHERE s.isActive = :isActive AND LOWER(s.name) LIKE LOWER(CONCAT('%', :name, '%'))")

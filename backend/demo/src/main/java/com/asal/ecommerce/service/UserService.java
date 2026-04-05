@@ -7,7 +7,9 @@ import com.asal.ecommerce.repository.UserRepository;
 import com.asal.ecommerce.enums.Role;
 import com.asal.ecommerce.enums.Provider;
 import com.asal.ecommerce.mapper.AuthMapper;
+import com.asal.ecommerce.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -21,6 +23,12 @@ public class UserService {
     @Autowired
     private AuthMapper authMapper;
     
+    @Autowired
+    private JwtUtil jwtUtil;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
     public AdminLoginResponse adminLogin(AdminLoginRequest request) {
         try {
             System.out.println("Admin login attempt for email: " + request.getEmail());
@@ -33,6 +41,8 @@ public class UserService {
             }
             
             User user = userOpt.get();
+            System.out.println("User found: " + user.getEmail());
+            System.out.println("User role: " + user.getRole());
             System.out.println("User found - Role: " + user.getRole() + ", Provider: " + user.getProvider() + ", Active: " + user.isActive());
             
             // Step 2: Check if user role is ADMIN
@@ -53,15 +63,35 @@ public class UserService {
                 return authMapper.toAdminLoginResponse(null, false, "Account is deactivated");
             }
             
-            // Step 5: Compare password manually
-            if (!request.getPassword().equals(user.getPassword())) {
+            // Step 5: Verify password using BCrypt
+            System.out.println("Raw password from request: " + request.getPassword());
+            System.out.println("Stored password hash: " + user.getPassword());
+            
+            // Test what the hash should be for "admin123"
+            String testHash = passwordEncoder.encode("admin123");
+            System.out.println("New hash for 'admin123': " + testHash);
+            System.out.println("Test hash matches stored: " + passwordEncoder.matches("admin123", user.getPassword()));
+            
+            System.out.println("Password match: " + passwordEncoder.matches(request.getPassword(), user.getPassword()));
+            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
                 System.out.println("Password mismatch for user: " + user.getEmail());
-                return authMapper.toAdminLoginResponse(null, false, "Invalid password");
+                return new AdminLoginResponse(false, "Invalid email or password", null);
             }
             
             // All checks passed - successful login
             System.out.println("Admin login successful for user: " + user.getEmail());
-            return authMapper.toAdminLoginResponse(user, true, "Login successful");
+            
+            // Generate JWT token
+            String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
+            Long expiresIn = jwtUtil.getExpirationTime();
+            
+            AdminLoginResponse.AdminData adminData = new AdminLoginResponse.AdminData(
+                user.getId(),
+                user.getEmail(),
+                user.getName()
+            );
+            
+            return new AdminLoginResponse(true, "Login successful", token, expiresIn, adminData);
             
         } catch (Exception e) {
             System.err.println("Admin login error: " + e.getMessage());
@@ -104,5 +134,24 @@ public class UserService {
     public boolean isAdmin(String email) {
         Optional<User> user = userRepository.findByEmail(email);
         return user.isPresent() && user.get().getRole() == Role.ADMIN;
+    }
+    
+    public void fixAdminPassword() {
+        try {
+            Optional<User> adminOpt = userRepository.findByEmail("admin@example.com");
+            if (adminOpt.isPresent()) {
+                User admin = adminOpt.get();
+                String correctHash = passwordEncoder.encode("admin123");
+                admin.setPassword(correctHash);
+                userRepository.save(admin);
+                System.out.println("Admin password updated successfully");
+                System.out.println("New password hash: " + correctHash);
+            } else {
+                System.out.println("Admin user not found");
+            }
+        } catch (Exception e) {
+            System.err.println("Error fixing admin password: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

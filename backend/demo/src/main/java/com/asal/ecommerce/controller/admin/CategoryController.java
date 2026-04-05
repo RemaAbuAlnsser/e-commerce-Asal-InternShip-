@@ -1,4 +1,4 @@
-package com.asal.ecommerce.controller;
+package com.asal.ecommerce.controller.admin;
 
 import com.asal.ecommerce.dto.*;
 import com.asal.ecommerce.service.CategoryService;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
-@RestController
+@RestController("adminCategoryController")
 @RequestMapping("/api/admin/categories")
 public class CategoryController {
     

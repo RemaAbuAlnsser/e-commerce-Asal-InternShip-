@@ -147,4 +147,30 @@ public class SubcategoryService {
         return subcategoryMapper.toResponse(savedSubcategory);
     }
     
+    // Customer public methods - return only active data
+    @Transactional(readOnly = true)
+    public Page<SubcategoryResponse> getActiveSubcategories(int page, int size, String sortBy, String direction) {
+        Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<Subcategory> subcategories = subcategoryRepository.findByIsActiveTrue(pageable);
+        return subcategories.map(subcategoryMapper::toResponse);
+    }
+    
+    @Transactional(readOnly = true)
+    public SubcategoryResponse getActiveSubcategoryBySlug(String slug) {
+        Subcategory subcategory = subcategoryRepository.findBySlugAndIsActiveTrue(slug)
+            .orElseThrow(() -> new RuntimeException("Active subcategory not found with slug: " + slug));
+        return subcategoryMapper.toResponse(subcategory);
+    }
+    
+    @Transactional(readOnly = true)
+    public Page<SubcategoryResponse> getActiveSubcategoriesByCategorySlug(String categorySlug, int page, int size, String sortBy, String direction) {
+        Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<Subcategory> subcategories = subcategoryRepository.findByCategorySlugAndIsActiveTrue(categorySlug, pageable);
+        return subcategories.map(subcategoryMapper::toResponse);
+    }
+    
 }

@@ -3,46 +3,37 @@ package com.asal.ecommerce.mapper;
 import com.asal.ecommerce.dto.*;
 import com.asal.ecommerce.model.Category;
 import com.asal.ecommerce.model.Subcategory;
-import org.springframework.stereotype.Component;
+import org.mapstruct.*;
 
-@Component
-public class SubcategoryMapper {
+@Mapper(componentModel = "spring")
+public interface SubcategoryMapper {
     
-    public Subcategory toEntity(SubcategoryCreateRequest request, Category category) {
-        Subcategory subcategory = new Subcategory();
-        subcategory.setName(request.getName().trim());
-        subcategory.setSlug(generateSlug(request.getSlug(), request.getName().trim()));
-        subcategory.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
-        subcategory.setImageUrl(request.getImageUrl());
-        subcategory.setIsActive(true);
-        subcategory.setCategory(category);
-        return subcategory;
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "isActive", constant = "true")
+    @Mapping(target = "name", expression = "java(request.getName().trim())")
+    @Mapping(target = "slug", expression = "java(generateSlug(request.getSlug(), request.getName().trim()))")
+    @Mapping(target = "description", expression = "java(request.getDescription() != null ? request.getDescription().trim() : null)")
+    @Mapping(target = "imageUrl", source = "request.imageUrl")
+    @Mapping(target = "category", source = "category")
+    Subcategory toEntity(SubcategoryCreateRequest request, Category category);
     
-    public SubcategoryResponse toResponse(Subcategory subcategory) {
-        SubcategoryResponse response = new SubcategoryResponse();
-        response.setId(subcategory.getId());
-        response.setName(subcategory.getName());
-        response.setSlug(subcategory.getSlug());
-        response.setDescription(subcategory.getDescription());
-        response.setImageUrl(subcategory.getImageUrl());
-        response.setIsActive(subcategory.getIsActive());
-        response.setCreatedAt(subcategory.getCreatedAt());
-        response.setUpdatedAt(subcategory.getUpdatedAt());
-        response.setCategoryId(subcategory.getCategory().getId());
-        response.setCategoryName(subcategory.getCategory().getName());
-        return response;
-    }
+    @Mapping(target = "categoryId", source = "category.id")
+    @Mapping(target = "categoryName", source = "category.name")
+    SubcategoryResponse toResponse(Subcategory subcategory);
     
-    public void updateEntity(Subcategory subcategory, SubcategoryUpdateRequest request, Category category) {
-        subcategory.setName(request.getName().trim());
-        subcategory.setSlug(generateSlug(request.getSlug(), request.getName().trim()));
-        subcategory.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
-        subcategory.setImageUrl(request.getImageUrl());
-        subcategory.setCategory(category);
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "name", expression = "java(request.getName().trim())")
+    @Mapping(target = "slug", expression = "java(generateSlug(request.getSlug(), request.getName().trim()))")
+    @Mapping(target = "description", expression = "java(request.getDescription() != null ? request.getDescription().trim() : null)")
+    @Mapping(target = "imageUrl", source = "request.imageUrl")
+    @Mapping(target = "category", source = "category")
+    void updateEntity(@MappingTarget Subcategory subcategory, SubcategoryUpdateRequest request, Category category);
     
-    public String generateSlug(String providedSlug, String name) {
+    default String generateSlug(String providedSlug, String name) {
         if (providedSlug != null && !providedSlug.trim().isEmpty()) {
             return providedSlug.trim().toLowerCase().replaceAll("[^a-z0-9]+", "-");
         }

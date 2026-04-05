@@ -1,4 +1,4 @@
-package com.asal.ecommerce.controller;
+package com.asal.ecommerce.controller.admin;
 
 import com.asal.ecommerce.dto.AdminLoginRequest;
 import com.asal.ecommerce.dto.AdminLoginResponse;

@@ -117,4 +117,21 @@ public class CategoryService {
         return categoryRepository.existsById(id);
     }
     
+    // Customer public methods - return only active data
+    @Transactional(readOnly = true)
+    public Page<CategoryResponse> getActiveCategories(int page, int size, String sortBy, String direction) {
+        Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<Category> categories = categoryRepository.findByIsActiveTrue(pageable);
+        return categories.map(categoryMapper::toResponse);
+    }
+    
+    @Transactional(readOnly = true)
+    public CategoryResponse getActiveCategoryBySlug(String slug) {
+        Category category = categoryRepository.findBySlugAndIsActiveTrue(slug)
+            .orElseThrow(() -> new RuntimeException("Active category not found with slug: " + slug));
+        return categoryMapper.toResponse(category);
+    }
+    
 }

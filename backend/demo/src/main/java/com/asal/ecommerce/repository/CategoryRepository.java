@@ -26,6 +26,11 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     @Query("SELECT c FROM Category c WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))")
     Page<Category> findByNameContainingIgnoreCase(@Param("name") String name, Pageable pageable);
     
+    // Customer public methods - active data only
+    Page<Category> findByIsActiveTrue(Pageable pageable);
+    
+    Optional<Category> findBySlugAndIsActiveTrue(String slug);
+    
     Page<Category> findByIsActive(Boolean isActive, Pageable pageable);
     
     @Query("SELECT c FROM Category c WHERE c.isActive = :isActive AND LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))")
