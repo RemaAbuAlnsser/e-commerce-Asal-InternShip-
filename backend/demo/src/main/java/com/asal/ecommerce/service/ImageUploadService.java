@@ -25,6 +25,21 @@ public class ImageUploadService {
         return uploadImage(file, "subcategories");
     }
     
+
+public String uploadProductImage(MultipartFile file) throws IOException {
+        return uploadImage(file, "products");
+    }
+ 
+    public String uploadProductHoverImage(MultipartFile file) throws IOException {
+        return uploadImage(file, "products");
+    }
+
+
+
+
+
+
+
     private String uploadImage(MultipartFile file, String category) throws IOException {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");

@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,16 +22,25 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
 @Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class CategoryRepositoryTest {
 
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private SubcategoryRepository subcategoryRepository;
+
     private Category testCategory;
 
     @BeforeEach
     void setUp() {
-        // Clean up database before each test
+        // Clean up database in correct order to avoid FK violations
+        productRepository.deleteAll();
+        subcategoryRepository.deleteAll();
         categoryRepository.deleteAll();
         
         testCategory = new Category();

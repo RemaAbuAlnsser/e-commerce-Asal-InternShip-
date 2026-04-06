@@ -1,28 +1,484 @@
 <div class="page-container">
+  <!-- Header Section -->
   <div class="page-header">
-    <h1>Products Management</h1>
-    <p>Manage your product inventory and catalog</p>
+    <div class="header-content">
+      <div class="header-text">
+        <h1>Products Management</h1>
+        <p>Manage your product inventory and catalog with ease</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-primary" (click)="openProductModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Add Product
+        </button>
+      </div>
+    </div>
   </div>
-  
-  <div class="page-content">
-    <div class="placeholder-content">
-      <div class="placeholder-icon">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Stats Section -->
+  <div class="stats-section">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path d="M21 16V8A2 2 0 0 0 19 6H5A2 2 0 0 0 3 8V16A2 2 0 0 0 5 18H19A2 2 0 0 0 21 16Z" stroke="currentColor" stroke-width="2"/>
           <polyline points="7,6 7,4 17,4 17,6" stroke="currentColor" stroke-width="2"/>
         </svg>
       </div>
-      <h3>Products Management</h3>
-      <p>This page will contain product management functionality including:</p>
-      <ul>
-        <li>Add new products</li>
-        <li>Edit product details</li>
-        <li>Manage product images</li>
-        <li>Inventory tracking</li>
-        <li>Product pricing</li>
-        <li>Product categories and tags</li>
-      </ul>
-      <button class="cta-button">Coming Soon</button>
+      <div class="stat-info">
+        <h3>{{ totalProducts }}</h3>
+        <p>Total Products</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="search-section">
+    <div class="search-bar">
+      <div class="search-input-container">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+          <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input 
+          type="text" 
+          class="search-input" 
+          placeholder="Search products..." 
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="onSearch()"
+          (input)="onSearch()">
+        <button 
+          *ngIf="searchTerm" 
+          class="clear-search" 
+          (click)="searchTerm = ''; onSearch()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Advanced Filters -->
+    <div class="filters-section">
+      <div class="filter-group">
+        <label>Category</label>
+        <select [(ngModel)]="selectedCategoryId" (change)="onCategoryChange(selectedCategoryId)">
+          <option value="">All Categories</option>
+          <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Subcategory</label>
+        <select [(ngModel)]="selectedSubcategoryId" (change)="onFilter()" [disabled]="!selectedCategoryId">
+          <option value="">All Subcategories</option>
+          <option *ngFor="let subcategory of subcategories" [value]="subcategory.id">{{ subcategory.name }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Brand</label>
+        <select [(ngModel)]="selectedBrandId" (change)="onFilter()">
+          <option value="">All Brands</option>
+          <option *ngFor="let brand of brands" [value]="brand.id">{{ brand.name }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Status</label>
+        <select [(ngModel)]="selectedStatus" (change)="onFilter()">
+          <option value="">All Status</option>
+          <option *ngFor="let status of productStatuses" [value]="status.value">{{ status.label }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group checkbox-group">
+        <label>
+          <input type="checkbox" [(ngModel)]="showFeaturedOnly" (change)="onFilter()">
+          Featured Only
+        </label>
+      </div>
+
+      <div class="filter-group checkbox-group">
+        <label>
+          <input type="checkbox" [(ngModel)]="showExclusiveOnly" (change)="onFilter()">
+          Exclusive Only
+        </label>
+      </div>
+
+      <button class="btn-secondary" (click)="clearFilters()">Clear Filters</button>
+    </div>
+  </div>
+
+  <!-- Products Table -->
+  <div class="table-section">
+    <div class="table-header">
+      <h3>Products ({{ totalElements }})</h3>
+    </div>
+
+    <div class="table-container" *ngIf="!loading">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th>Product Details</th>
+            <th>Category</th>
+            <th>Brand</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let product of products" class="table-row">
+            <td>
+              <div class="product-image-container">
+                <div class="product-image">
+                  <!-- Show placeholder if no image URL -->
+                  <div *ngIf="!getImageUrl(product.imageUrl)" class="image-placeholder">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M21 19V5C21 3.9 20.1 3 19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 19 20.1 21 19Z" stroke="currentColor" stroke-width="2"/>
+                      <path d="M8.5 10C9.32843 10 10 9.32843 10 8.5C10 7.67157 9.32843 7 8.5 7C7.67157 7 7 7.67157 7 8.5C7 9.32843 7.67157 10 8.5 10Z" stroke="currentColor" stroke-width="2"/>
+                      <path d="M21 15L16 10L5 21" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                  </div>
+                  
+                  <!-- Show images if URLs exist -->
+                  <ng-container *ngIf="getImageUrl(product.imageUrl)">
+                    <img 
+                      [src]="getImageUrl(product.imageUrl)" 
+                      [alt]="product.name"
+                      class="main-image"
+                      [class.has-hover]="product.hoverImageUrl"
+                      (error)="onImageError($event)"
+                    />
+                    <img 
+                      *ngIf="product.hoverImageUrl && getImageUrl(product.hoverImageUrl)"
+                      [src]="getImageUrl(product.hoverImageUrl)" 
+                      [alt]="product.name + ' hover'"
+                      class="hover-image"
+                      (error)="onImageError($event)"
+                    />
+                  </ng-container>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="product-details">
+                <h4>{{ product.name }}</h4>
+                <p class="sku">SKU: {{ product.sku }}</p>
+                <div class="product-badges">
+                  <span *ngIf="product.isFeatured" class="badge badge-featured">Featured</span>
+                  <span *ngIf="product.isExclusive" class="badge badge-exclusive">Exclusive</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="category-info">
+                <span class="category">{{ product.categoryName }}</span>
+                <span *ngIf="product.subcategoryName" class="subcategory">{{ product.subcategoryName }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="brand-name">{{ product.brandName }}</span>
+            </td>
+            <td>
+              <div class="price-info">
+                <span class="current-price">${{ product.price }}</span>
+                <span *ngIf="product.oldPrice && product.oldPrice > product.price" class="old-price">${{ product.oldPrice }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="stock-count" [class.low-stock]="product.stock < 10">{{ product.stock }}</span>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(product.status)">
+                {{ product.status }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon" (click)="editProduct(product)" title="Edit">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M11 4H4A2 2 0 0 0 2 6V20A2 2 0 0 0 4 22H18A2 2 0 0 0 20 20V13" stroke="currentColor" stroke-width="2"/>
+                    <path d="M18.5 2.5A2.121 2.121 0 0 1 21 5L12 14L8 15L9 11L18.5 2.5Z" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </button>
+                <button class="btn-icon" (click)="toggleProductStatus(product)" 
+                        [title]="product.status === 'active' ? 'Deactivate' : 'Activate'">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </button>
+                <button class="btn-icon btn-danger" (click)="confirmDelete(product)" title="Delete">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M8 6V4A2 2 0 0 1 10 2H14A2 2 0 0 1 16 4V6M19 6V20A2 2 0 0 1 17 22H7A2 2 0 0 1 5 20V6H19Z" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Empty State -->
+      <div *ngIf="products.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <path d="M21 16V8A2 2 0 0 0 19 6H5A2 2 0 0 0 3 8V16A2 2 0 0 0 5 18H19A2 2 0 0 0 21 16Z" stroke="currentColor" stroke-width="2"/>
+            <polyline points="7,6 7,4 17,4 17,6" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+        <h3>No products found</h3>
+        <p>{{ searchTerm ? 'Try adjusting your search terms or filters' : 'Get started by adding your first product' }}</p>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading products...</p>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1 && !loading">
+      <button class="btn-pagination" (click)="previousPage()" [disabled]="currentPage === 0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Previous
+      </button>
+      
+      <div class="page-numbers">
+        <button *ngFor="let page of [].constructor(totalPages); let i = index" 
+                class="page-number" 
+                [class.active]="i === currentPage"
+                (click)="goToPage(i)">
+          {{ i + 1 }}
+        </button>
+      </div>
+      
+      <button class="btn-pagination" (click)="nextPage()" [disabled]="currentPage === totalPages - 1">
+        Next
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Product Modal -->
+<div class="modal-overlay" *ngIf="showProductModal" (click)="closeProductModal()">
+  <div class="modal-content large-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ isEditingProduct ? 'Edit Product' : 'Add New Product' }}</h2>
+      <button class="modal-close" (click)="closeProductModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <form [formGroup]="productForm" (ngSubmit)="onSubmit()" class="modal-form">
+      <div class="form-grid">
+        <!-- Basic Information -->
+        <div class="form-section">
+          <h3>Basic Information</h3>
+          
+          <div class="form-group">
+            <label for="name">Product Name *</label>
+            <input type="text" id="name" formControlName="name" placeholder="Enter product name">
+            <div class="error-message" *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched">
+              Product name is required (min 2 characters)
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="sku">SKU *</label>
+            <input type="text" id="sku" formControlName="sku" placeholder="Enter product SKU">
+            <div class="error-message" *ngIf="productForm.get('sku')?.invalid && productForm.get('sku')?.touched">
+              SKU is required (min 3 characters)
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" formControlName="description" placeholder="Enter product description" rows="4"></textarea>
+          </div>
+        </div>
+
+        <!-- Pricing & Inventory -->
+        <div class="form-section">
+          <h3>Pricing & Inventory</h3>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="price">Price *</label>
+              <input type="number" id="price" formControlName="price" placeholder="0.00" step="0.01" min="0">
+              <div class="error-message" *ngIf="productForm.get('price')?.invalid && productForm.get('price')?.touched">
+                Price is required and must be >= 0
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="oldPrice">Old Price</label>
+              <input type="number" id="oldPrice" formControlName="oldPrice" placeholder="0.00" step="0.01" min="0">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="stock">Stock Quantity *</label>
+            <input type="number" id="stock" formControlName="stock" placeholder="0" min="0">
+            <div class="error-message" *ngIf="productForm.get('stock')?.invalid && productForm.get('stock')?.touched">
+              Stock quantity is required and must be >= 0
+            </div>
+          </div>
+        </div>
+
+        <!-- Categories & Brand -->
+        <div class="form-section">
+          <h3>Categories & Brand</h3>
+          
+          <div class="form-group">
+            <label for="categoryId">Category *</label>
+            <select id="categoryId" formControlName="categoryId" (change)="onCategoryChange(productForm.get('categoryId')?.value)">
+              <option value="">Select Category</option>
+              <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
+            </select>
+            <div class="error-message" *ngIf="productForm.get('categoryId')?.invalid && productForm.get('categoryId')?.touched">
+              Category is required
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="subcategoryId">Subcategory</label>
+            <select id="subcategoryId" formControlName="subcategoryId" [disabled]="!subcategories.length">
+              <option value="">Select Subcategory</option>
+              <option *ngFor="let subcategory of subcategories" [value]="subcategory.id">{{ subcategory.name }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="brandId">Brand *</label>
+            <select id="brandId" formControlName="brandId">
+              <option value="">Select Brand</option>
+              <option *ngFor="let brand of brands" [value]="brand.id">{{ brand.name }}</option>
+            </select>
+            <div class="error-message" *ngIf="productForm.get('brandId')?.invalid && productForm.get('brandId')?.touched">
+              Brand is required
+            </div>
+          </div>
+        </div>
+
+        <!-- Status & Features -->
+        <div class="form-section">
+          <h3>Status & Features</h3>
+          
+          <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" formControlName="status">
+              <option *ngFor="let status of productStatuses" [value]="status.value">{{ status.label }}</option>
+            </select>
+          </div>
+
+          <div class="checkbox-group">
+            <label>
+              <input type="checkbox" formControlName="isFeatured">
+              Featured Product
+            </label>
+          </div>
+
+          <div class="checkbox-group">
+            <label>
+              <input type="checkbox" formControlName="isExclusive">
+              Exclusive Product
+            </label>
+          </div>
+        </div>
+
+        <!-- Images -->
+        <div class="form-section full-width">
+          <h3>Product Images</h3>
+          
+          <div class="image-upload-section">
+            <div class="image-upload-group">
+              <label>Main Image</label>
+              <div class="image-upload-area">
+                <input type="file" (change)="onImageSelect($event, 'main')" accept="image/*" style="display: none" #mainImageInput>
+                <div class="image-preview" *ngIf="productImagePreview">
+                  <img [src]="productImagePreview" alt="Main image preview">
+                  <button type="button" class="remove-image" (click)="productImagePreview = null; productImageFile = null">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="upload-placeholder" *ngIf="!productImagePreview" (click)="mainImageInput.click()">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V15" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2"/>
+                    <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <p>Click to upload main image</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="image-upload-group">
+              <label>Hover Image</label>
+              <div class="image-upload-area">
+                <input type="file" (change)="onImageSelect($event, 'hover')" accept="image/*" style="display: none" #hoverImageInput>
+                <div class="image-preview" *ngIf="hoverImagePreview">
+                  <img [src]="hoverImagePreview" alt="Hover image preview">
+                  <button type="button" class="remove-image" (click)="hoverImagePreview = null; hoverImageFile = null">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="upload-placeholder" *ngIf="!hoverImagePreview" (click)="hoverImageInput.click()">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V15" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2"/>
+                    <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <p>Click to upload hover image</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeProductModal()">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="productForm.invalid || submitting">
+          <span *ngIf="submitting" class="spinner-small"></span>
+          {{ isEditingProduct ? 'Update Product' : 'Create Product' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="showDeleteModal = false">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Confirm Delete</h2>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete the product "{{ itemToDelete?.name }}"?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="showDeleteModal = false">Cancel</button>
+      <button class="btn-danger" (click)="deleteProduct()">Delete Product</button>
     </div>
   </div>
 </div>

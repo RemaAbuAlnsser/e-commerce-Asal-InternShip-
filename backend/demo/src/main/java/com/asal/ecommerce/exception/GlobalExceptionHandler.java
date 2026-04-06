@@ -2,6 +2,7 @@ package com.asal.ecommerce.exception;
 
 import com.asal.ecommerce.dto.AdminLoginResponse;
 import com.asal.ecommerce.dto.ApiResponse;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,6 +14,15 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleEntityNotFoundException(EntityNotFoundException ex) {
+        String errorMessage = ex.getMessage();
+        ApiResponse<Object> response = ApiResponse.error(errorMessage);
+        
+        System.err.println("Entity not found: " + errorMessage);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<AdminLoginResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
