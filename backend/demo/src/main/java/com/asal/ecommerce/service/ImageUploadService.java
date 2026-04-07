@@ -13,79 +13,75 @@ import java.util.UUID;
 
 @Service
 public class ImageUploadService {
-    
+
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
-    
+
     public String uploadCategoryImage(MultipartFile file) throws IOException {
         return uploadImage(file, "categories");
     }
-    
+
     public String uploadSubcategoryImage(MultipartFile file) throws IOException {
         return uploadImage(file, "subcategories");
     }
-    
 
-public String uploadProductImage(MultipartFile file) throws IOException {
+    public String uploadProductImage(MultipartFile file) throws IOException {
         return uploadImage(file, "products");
     }
- 
+
     public String uploadProductHoverImage(MultipartFile file) throws IOException {
         return uploadImage(file, "products");
     }
 
+    // ── NEW: sub-images per color variant ────────────────────────────────────
+    public String uploadColorImage(MultipartFile file) throws IOException {
+        return uploadImage(file, "products/colors");
+    }
 
-
-
-
-
-
+    // ── shared private logic ──────────────────────────────────────────────────
     private String uploadImage(MultipartFile file, String category) throws IOException {
-        if (file.isEmpty()) {
+        if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");
         }
-        
+
         // Validate file type
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
             throw new IllegalArgumentException("File must be an image");
         }
-        
-        // Validate file size (10MB max)
+
+        // Validate file size (10 MB max)
         if (file.getSize() > 10 * 1024 * 1024) {
             throw new IllegalArgumentException("File size must be less than 10MB");
         }
-        
-        // Create directory structure
+
+        // Create directory if it doesn't exist
         Path categoryDir = Paths.get(uploadDir, category);
         Files.createDirectories(categoryDir);
-        
-        // Generate unique filename
+
+        // Generate unique filename keeping the original extension
         String originalFilename = file.getOriginalFilename();
         String extension = "";
         if (originalFilename != null && originalFilename.contains(".")) {
             extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         }
-        
-        String filename = UUID.randomUUID().toString() + extension;
-        Path filePath = categoryDir.resolve(filename);
-        
-        // Save file
+
+        String filename  = UUID.randomUUID().toString() + extension;
+        Path   filePath  = categoryDir.resolve(filename);
+
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        
-        // Return relative path for database storage
+
+        // Return path stored in DB  →  /uploads/products/colors/uuid.jpg
         return "/" + uploadDir + "/" + category + "/" + filename;
     }
-    
+
     public void deleteImage(String imagePath) {
         try {
             if (imagePath != null && imagePath.startsWith("/")) {
-                // Remove leading slash for file system path
                 Path filePath = Paths.get(imagePath.substring(1));
                 Files.deleteIfExists(filePath);
             }
         } catch (IOException e) {
-            // Log error but don't throw - image deletion is not critical
             System.err.println("Failed to delete image: " + imagePath + " - " + e.getMessage());
         }
     }

@@ -1,6 +1,6 @@
 package com.asal.ecommerce.controller.customer;
 
-import com.asal.ecommerce.dto.ProductResponse;
+import com.asal.ecommerce.dto.ProductResponse;   // ← fixed import (was dto.ProductResponse)
 import com.asal.ecommerce.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,7 +29,7 @@ public class ProductController {
     }
 
     // GET /api/products?categoryId=&subcategoryId=&brandId=&isFeatured=&isExclusive=
-    // Always filters to status=active for public customers
+    // Always filters status=active for public customers
     @GetMapping
     public ResponseEntity<Page<ProductResponse>> getAll(
             @RequestParam(required = false) Long    categoryId,

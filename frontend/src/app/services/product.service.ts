@@ -1,211 +1,219 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-
-export interface Product {
-  id: number;
-  name: string;
-  sku: string;
-  description?: string;
-  price: number;
-  oldPrice?: number;
-  stock: number;
-  status: string;
-  isFeatured: boolean;
-  isExclusive: boolean;
-  categoryId: number;
-  categoryName?: string;
-  subcategoryId?: number;
-  subcategoryName?: string;
-  brandId: number;
-  brandName?: string;
-  imageUrl?: string;
-  hoverImageUrl?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface ProductCreateRequest {
-  name: string;
-  sku: string;
-  description?: string;
-  price: number;
-  oldPrice?: number;
-  stock: number;
-  status: string;
-  isFeatured: boolean;
-  isExclusive: boolean;
-  categoryId: number;
-  subcategoryId?: number;
-  brandId: number;
-  imageUrl?: string;
-  hoverImageUrl?: string;
-}
-
-export interface ProductUpdateRequest {
-  name: string;
-  sku: string;
-  description?: string;
-  price: number;
-  oldPrice?: number;
-  stock: number;
-  status: string;
-  isFeatured: boolean;
-  isExclusive: boolean;
-  categoryId: number;
-  subcategoryId?: number;
-  brandId: number;
-  imageUrl?: string;
-  hoverImageUrl?: string;
-}
-
-export interface PageResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  size: number;
-  number: number;
-}
-
-export interface ImageUploadResponse {
-  success: boolean;
-  imageUrl?: string;
-  message?: string;
-}
+import {
+  ProductResponse,
+  PageResponse,
+  CategoryOption,
+  SubcategoryOption,
+  BrandOption
+} from './product.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProductService {
-  private apiUrl = `${environment.apiUrl}/admin/products`;
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
-  private getAuthHeaders(): HttpHeaders {
-    const token = localStorage.getItem('adminToken');
-    return new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
+  private adminUrl = `${environment.apiUrl}/admin/products`;
+  private publicUrl = `${environment.apiUrl}/products`;
+
+  // ===========================================================================
+  // ADMIN ENDPOINTS
+  // ===========================================================================
+
+  /**
+   * Create a new product with colors and images.
+   * Uses multipart/form-data — Angular HttpClient handles boundary automatically.
+   */
+  createProduct(formData: FormData): Observable<ProductResponse> {
+    return this.http.post<ProductResponse>(this.adminUrl, formData);
   }
 
-  // Get all products with pagination and filtering
-  getAllProducts(
-    page: number = 0,
-    size: number = 10,
-    sortBy: string = 'name',
-    direction: string = 'asc',
-    categoryId?: number,
-    subcategoryId?: number,
-    brandId?: number,
-    status?: string,
-    isFeatured?: boolean,
-    isExclusive?: boolean
-  ): Observable<PageResponse<Product>> {
+  /** Get all products (admin view, no pagination) */
+  getAllProducts(): Observable<ProductResponse[]> {
+    return this.http.get<ProductResponse[]>(this.adminUrl);
+  }
+
+  /** Get single product by id (admin — no status filter) */
+  getProductById(id: number): Observable<ProductResponse> {
+    return this.http.get<ProductResponse>(`${this.adminUrl}/${id}`);
+  }
+
+  /**
+   * Update basic product fields + landing images.
+   * Only send the fields you want to change.
+   */
+  updateProduct(id: number, formData: FormData): Observable<ProductResponse> {
+    return this.http.put<ProductResponse>(`${this.adminUrl}/${id}`, formData);
+  }
+
+  /** Add a new color variant to an existing product */
+  addColor(productId: number, formData: FormData): Observable<ProductResponse> {
+    return this.http.post<ProductResponse>(`${this.adminUrl}/${productId}/colors`, formData);
+  }
+
+  /** Update the stock of one color variant */
+  updateColorStock(productId: number, colorId: number, stock: number): Observable<ProductResponse> {
+    const params = new HttpParams().set('stock', stock.toString());
+    return this.http.patch<ProductResponse>(
+      `${this.adminUrl}/${productId}/colors/${colorId}/stock`,
+      null,
+      { params }
+    );
+  }
+
+  /** Delete one color variant (and its sub-images) */
+  deleteColor(productId: number, colorId: number): Observable<ProductResponse> {
+    return this.http.delete<ProductResponse>(`${this.adminUrl}/${productId}/colors/${colorId}`);
+  }
+
+  /** Delete entire product */
+  deleteProduct(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.adminUrl}/${id}`);
+  }
+
+  // ===========================================================================
+  // CUSTOMER / PUBLIC ENDPOINTS
+  // ===========================================================================
+
+  getById(id: number): Observable<ProductResponse> {
+    return this.http.get<ProductResponse>(`${this.publicUrl}/${id}`);
+  }
+
+  getBySku(sku: string): Observable<ProductResponse> {
+    return this.http.get<ProductResponse>(`${this.publicUrl}/sku/${sku}`);
+  }
+
+  getAll(
+    filters: {
+      categoryId?: number;
+      subcategoryId?: number;
+      brandId?: number;
+      isFeatured?: boolean;
+      isExclusive?: boolean;
+    } = {},
+    page = 0,
+    size = 20
+  ): Observable<PageResponse<ProductResponse>> {
     let params = new HttpParams()
       .set('page', page.toString())
-      .set('size', size.toString())
-      .set('sortBy', sortBy)
-      .set('direction', direction);
+      .set('size', size.toString());
 
-    if (categoryId !== undefined) params = params.set('categoryId', categoryId.toString());
-    if (subcategoryId !== undefined) params = params.set('subcategoryId', subcategoryId.toString());
-    if (brandId !== undefined) params = params.set('brandId', brandId.toString());
-    if (status) params = params.set('status', status);
-    if (isFeatured !== undefined) params = params.set('isFeatured', isFeatured.toString());
-    if (isExclusive !== undefined) params = params.set('isExclusive', isExclusive.toString());
+    if (filters.categoryId)    params = params.set('categoryId',    filters.categoryId.toString());
+    if (filters.subcategoryId) params = params.set('subcategoryId', filters.subcategoryId.toString());
+    if (filters.brandId)       params = params.set('brandId',       filters.brandId.toString());
+    if (filters.isFeatured  != null) params = params.set('isFeatured',  filters.isFeatured.toString());
+    if (filters.isExclusive != null) params = params.set('isExclusive', filters.isExclusive.toString());
 
-    return this.http.get<PageResponse<Product>>(`${this.apiUrl}`, {
-      headers: this.getAuthHeaders(),
-      params
-    });
+    return this.http.get<PageResponse<ProductResponse>>(this.publicUrl, { params });
   }
 
-  // Search products
-  searchProducts(
-    keyword: string,
-    page: number = 0,
-    size: number = 10,
-    sortBy: string = 'name',
-    direction: string = 'asc'
-  ): Observable<PageResponse<Product>> {
+  search(keyword: string, page = 0, size = 20): Observable<PageResponse<ProductResponse>> {
     const params = new HttpParams()
       .set('keyword', keyword)
       .set('page', page.toString())
-      .set('size', size.toString())
-      .set('sortBy', sortBy)
-      .set('direction', direction);
-
-    return this.http.get<PageResponse<Product>>(`${this.apiUrl}/search`, {
-      headers: this.getAuthHeaders(),
-      params
-    });
+      .set('size', size.toString());
+    return this.http.get<PageResponse<ProductResponse>>(`${this.publicUrl}/search`, { params });
   }
 
-  // Get product by ID
-  getProductById(id: number): Observable<Product> {
-    return this.http.get<Product>(`${this.apiUrl}/${id}`, {
-      headers: this.getAuthHeaders()
-    });
+  // ===========================================================================
+  // DROPDOWN DATA (categories, subcategories, brands)
+  // ===========================================================================
+
+  getCategories(): Observable<CategoryOption[]> {
+    return this.http.get<CategoryOption[]>(`${environment.apiUrl}/admin/categories`);
   }
 
-  // Create new product
-  createProduct(product: ProductCreateRequest): Observable<Product> {
-    return this.http.post<Product>(`${this.apiUrl}`, product, {
-      headers: this.getAuthHeaders()
-    });
+  getSubcategories(): Observable<SubcategoryOption[]> {
+    return this.http.get<SubcategoryOption[]>(`${environment.apiUrl}/admin/subcategories`);
   }
 
-  // Update product
-  updateProduct(id: number, product: ProductUpdateRequest): Observable<Product> {
-    return this.http.put<Product>(`${this.apiUrl}/${id}`, product, {
-      headers: this.getAuthHeaders()
-    });
+  getBrands(): Observable<BrandOption[]> {
+    return this.http.get<BrandOption[]>(`${environment.apiUrl}/admin/brands`);
   }
 
-  // Delete product
-  deleteProduct(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`, {
-      headers: this.getAuthHeaders()
+  // ===========================================================================
+  // FORM DATA BUILDER HELPERS
+  // ===========================================================================
+
+  /**
+   * Build FormData for product creation.
+   * colorImages[0] = sub-images for color at index 0, etc.
+   */
+  buildCreateFormData(
+    fields: {
+      name: string;
+      description?: string;
+      price: number;
+      oldPrice?: number;
+      status?: string;
+      featured?: boolean;
+      exclusive?: boolean;
+      categoryId: number;
+      subcategoryId?: number;
+      brandId?: number;
+    },
+    primeImage: File | null,
+    hoverImage: File | null,
+    colors: Array<{
+      colorName: string;
+      colorHex: string;
+      stock: number;
+      subImages: File[];
+    }>
+  ): FormData {
+    const fd = new FormData();
+
+    fd.append('name',       fields.name);
+    fd.append('price',      fields.price.toString());
+    fd.append('categoryId', fields.categoryId.toString());
+    fd.append('status',     fields.status ?? 'active');
+    fd.append('featured',   (fields.featured ?? false).toString());
+    fd.append('exclusive',  (fields.exclusive ?? false).toString());
+
+    if (fields.description)   fd.append('description',   fields.description);
+    if (fields.oldPrice)       fd.append('oldPrice',      fields.oldPrice.toString());
+    if (fields.subcategoryId)  fd.append('subcategoryId', fields.subcategoryId.toString());
+    if (fields.brandId)        fd.append('brandId',       fields.brandId.toString());
+
+    if (primeImage) fd.append('primeImage', primeImage);
+    if (hoverImage) fd.append('hoverImage', hoverImage);
+
+    colors.forEach((color, i) => {
+      fd.append('colorNames',  color.colorName);
+      fd.append('colorHexes',  color.colorHex);
+      fd.append('colorStocks', color.stock.toString());
+
+      color.subImages.forEach(img => {
+        fd.append(`colorImages[${i}]`, img);
+      });
     });
+
+    return fd;
   }
 
-  // Update product status
-  updateProductStatus(id: number, status: string): Observable<Product> {
-    const params = new HttpParams().set('status', status);
-    return this.http.patch<Product>(`${this.apiUrl}/${id}/status`, null, {
-      headers: this.getAuthHeaders(),
-      params
-    });
+  /** Build FormData for adding a single color to an existing product */
+  buildAddColorFormData(
+    colorName: string,
+    colorHex: string,
+    stock: number,
+    images: File[]
+  ): FormData {
+    const fd = new FormData();
+    fd.append('colorName', colorName);
+    fd.append('colorHex',  colorHex);
+    fd.append('stock',     stock.toString());
+    images.forEach(img => fd.append('images', img));
+    return fd;
   }
 
-  // Get product count
-  getProductCount(): Observable<number> {
-    return this.http.get<number>(`${this.apiUrl}/count`, {
-      headers: this.getAuthHeaders()
-    });
-  }
-
-  // Upload product image
-  uploadProductImage(productId: number, file: File): Observable<ImageUploadResponse> {
-    const formData = new FormData();
-    formData.append('image', file);
-
-    const token = localStorage.getItem('adminToken');
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-
-    return this.http.post<ImageUploadResponse>(`${this.apiUrl}/${productId}/upload-image`, formData, {
-      headers
-    });
-  }
-
-  // Delete product image
-  deleteProductImage(productId: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${productId}/image`, {
-      headers: this.getAuthHeaders()
-    });
+  /** Resolve image URL to full backend URL */
+  resolveImageUrl(path: string | null): string {
+    if (!path) return 'assets/images/placeholder.png';
+    if (path.startsWith('http')) return path;
+    return `${environment.backendUrl}${path}`;
   }
 }

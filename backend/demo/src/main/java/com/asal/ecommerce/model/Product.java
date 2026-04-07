@@ -2,29 +2,24 @@ package com.asal.ecommerce.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 191)
+    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, unique = true)
     private String sku;
 
     @Column(columnDefinition = "TEXT")
@@ -37,20 +32,15 @@ public class Product {
     private BigDecimal oldPrice;
 
     @Column(nullable = false)
-    private Integer stock;
-
-    @Column(nullable = false, length = 50)
-    private String status;
+    private String status = "active";
 
     @Column(name = "is_featured", nullable = false)
-    private Boolean isFeatured;
+    private boolean featured = false;
 
     @Column(name = "is_exclusive", nullable = false)
-    private Boolean isExclusive;
+    private boolean exclusive = false;
 
-    // ── Relationships ────────────────────────────────────────────────────────
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
@@ -62,21 +52,35 @@ public class Product {
     @JoinColumn(name = "brand_id")
     private Brand brand;
 
-    // ── Images ───────────────────────────────────────────────────────────────
-
-    @Column(name = "image_url", length = 500)
+    @Column(name = "image_url")
     private String imageUrl;
 
-    @Column(name = "hover_image_url", length = 500)
+    @Column(name = "hover_image_url")
     private String hoverImageUrl;
 
-    // ── Audit ────────────────────────────────────────────────────────────────
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ProductColor> colors = new ArrayList<>();
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    // helper — total stock is always computed
+    public int getTotalStock() {
+        return colors.stream().mapToInt(ProductColor::getStock).sum();
+    }
 }

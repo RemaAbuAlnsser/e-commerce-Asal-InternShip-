@@ -1,180 +1,407 @@
 package com.asal.ecommerce.service;
 
 import com.asal.ecommerce.dto.ProductCreateRequest;
-import com.asal.ecommerce.dto.ProductResponse;
 import com.asal.ecommerce.dto.ProductUpdateRequest;
-import com.asal.ecommerce.mapper.ProductMapper;
-import com.asal.ecommerce.model.Brand;
-import com.asal.ecommerce.model.Category;
-import com.asal.ecommerce.model.Product;
-import com.asal.ecommerce.model.Subcategory;
-import com.asal.ecommerce.repository.BrandRepository;
-import com.asal.ecommerce.repository.CategoryRepository;
-import com.asal.ecommerce.repository.ProductRepository;
-import com.asal.ecommerce.repository.SubcategoryRepository;
-import com.asal.ecommerce.service.ImageUploadService;
-import jakarta.persistence.EntityNotFoundException;
+import com.asal.ecommerce.dto.ProductColorImageResponse;
+import com.asal.ecommerce.dto.ProductColorResponse;
+import com.asal.ecommerce.dto.ProductResponse;
+import com.asal.ecommerce.model.*;
+import com.asal.ecommerce.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ProductService {
 
-    private final ProductRepository     productRepository;
-    private final CategoryRepository    categoryRepository;
-    private final SubcategoryRepository subcategoryRepository;
-    private final BrandRepository       brandRepository;
-    private final ProductMapper         productMapper;
-    private final ImageUploadService    imageUploadService;
+    private final ProductRepository           productRepo;
+    private final ProductColorRepository      colorRepo;
+    private final ProductColorImageRepository colorImageRepo;
+    private final CategoryRepository          categoryRepo;
+    private final SubcategoryRepository       subcategoryRepo;
+    private final BrandRepository             brandRepo;
+    private final ImageUploadService          imageUploadService;
 
-    // ── Create ───────────────────────────────────────────────────────────────
+    // =========================================================================
+    // ADMIN METHODS
+    // =========================================================================
 
     @Transactional
-    public ProductResponse create(ProductCreateRequest request) {
-        if (productRepository.existsBySku(request.getSku())) {
-            throw new IllegalArgumentException("SKU already exists: " + request.getSku());
+    public ProductResponse createProduct(
+            ProductCreateRequest      req,
+            MultipartFile             primeImage,
+            MultipartFile             hoverImage,
+            List<String>              colorNames,
+            List<String>              colorHexes,
+            List<Integer>             colorStocks,
+            List<List<MultipartFile>> colorImages
+    ) throws IOException {
+
+        Category category = categoryRepo.findById(req.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found: " + req.getCategoryId()));
+
+        Subcategory subcategory = null;
+        if (req.getSubcategoryId() != null) {
+            subcategory = subcategoryRepo.findById(req.getSubcategoryId())
+                    .orElseThrow(() -> new RuntimeException("Subcategory not found: " + req.getSubcategoryId()));
         }
 
-        Product product = productMapper.toEntity(request);
-        resolveRelations(product, request.getCategoryId(), request.getSubcategoryId(), request.getBrandId());
+        Brand brand = null;
+        if (req.getBrandId() != null) {
+            brand = brandRepo.findById(req.getBrandId())
+                    .orElseThrow(() -> new RuntimeException("Brand not found: " + req.getBrandId()));
+        }
 
-        return productMapper.toResponse(productRepository.save(product));
+        String primeUrl = null;
+        String hoverUrl = null;
+        if (primeImage != null && !primeImage.isEmpty()) {
+            primeUrl = imageUploadService.uploadProductImage(primeImage);
+        }
+        if (hoverImage != null && !hoverImage.isEmpty()) {
+            hoverUrl = imageUploadService.uploadProductHoverImage(hoverImage);
+        }
+
+        Product product = Product.builder()
+                .name(req.getName())
+                .sku(generateSku(req.getName()))
+                .description(req.getDescription())
+                .price(req.getPrice())
+                .oldPrice(req.getOldPrice())
+                .status(req.getStatus() != null ? req.getStatus() : "active")
+                .featured(req.isFeatured())
+                .exclusive(req.isExclusive())
+                .category(category)
+                .subcategory(subcategory)
+                .brand(brand)
+                .imageUrl(primeUrl)
+                .hoverImageUrl(hoverUrl)
+                .build();
+
+        if (colorNames != null && !colorNames.isEmpty()) {
+            for (int i = 0; i < colorNames.size(); i++) {
+
+                ProductColor color = ProductColor.builder()
+                        .product(product)
+                        .colorName(colorNames.get(i))
+                        .colorHex(safeGet(colorHexes, i, "#000000"))
+                        .stock(safeGetInt(colorStocks, i, 0))
+                        .build();
+
+                List<MultipartFile> imgs = (colorImages != null && colorImages.size() > i)
+                        ? colorImages.get(i) : Collections.emptyList();
+
+                int order = 0;
+                for (MultipartFile img : imgs) {
+                    if (img != null && !img.isEmpty()) {
+                        String url = imageUploadService.uploadColorImage(img);
+                        color.getImages().add(
+                                ProductColorImage.builder()
+                                        .productColor(color)
+                                        .imageUrl(url)
+                                        .sortOrder(order++)
+                                        .build()
+                        );
+                    }
+                }
+                product.getColors().add(color);
+            }
+        }
+
+        return mapToResponse(productRepo.save(product));
     }
 
-    // ── Read ─────────────────────────────────────────────────────────────────
+    // Admin — list all (no pagination)
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getAllProducts() {
+        return productRepo.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
 
+    // Admin — get single product by id (no status check)
+    @Transactional(readOnly = true)
+    public ProductResponse getProductById(Long id) {
+        return mapToResponse(
+                productRepo.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + id))
+        );
+    }
+
+    @Transactional
+    public ProductResponse updateProduct(
+            Long                 id,
+            ProductUpdateRequest  req,
+            MultipartFile        primeImage,
+            MultipartFile        hoverImage
+    ) throws IOException {
+
+        Product product = productRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found: " + id));
+
+        if (req.getName()        != null) product.setName(req.getName());
+        if (req.getDescription() != null) product.setDescription(req.getDescription());
+        if (req.getPrice()       != null) product.setPrice(req.getPrice());
+        if (req.getOldPrice()    != null) product.setOldPrice(req.getOldPrice());
+        if (req.getStatus()      != null) product.setStatus(req.getStatus());
+        product.setFeatured(req.isFeatured());
+        product.setExclusive(req.isExclusive());
+
+        if (req.getCategoryId() != null) {
+            product.setCategory(categoryRepo.findById(req.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found")));
+        }
+        if (req.getSubcategoryId() != null) {
+            product.setSubcategory(subcategoryRepo.findById(req.getSubcategoryId())
+                    .orElseThrow(() -> new RuntimeException("Subcategory not found")));
+        }
+        if (req.getBrandId() != null) {
+            product.setBrand(brandRepo.findById(req.getBrandId())
+                    .orElseThrow(() -> new RuntimeException("Brand not found")));
+        }
+
+        if (primeImage != null && !primeImage.isEmpty()) {
+            imageUploadService.deleteImage(product.getImageUrl());
+            product.setImageUrl(imageUploadService.uploadProductImage(primeImage));
+        }
+        if (hoverImage != null && !hoverImage.isEmpty()) {
+            imageUploadService.deleteImage(product.getHoverImageUrl());
+            product.setHoverImageUrl(imageUploadService.uploadProductHoverImage(hoverImage));
+        }
+
+        return mapToResponse(productRepo.save(product));
+    }
+
+    @Transactional
+    public ProductResponse addColorToProduct(
+            Long                productId,
+            String              colorName,
+            String              colorHex,
+            int                 stock,
+            List<MultipartFile> images
+    ) throws IOException {
+
+        Product product = productRepo.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
+
+        ProductColor color = ProductColor.builder()
+                .product(product)
+                .colorName(colorName)
+                .colorHex(colorHex)
+                .stock(stock)
+                .build();
+
+        if (images != null) {
+            int order = 0;
+            for (MultipartFile img : images) {
+                if (img != null && !img.isEmpty()) {
+                    String url = imageUploadService.uploadColorImage(img);
+                    color.getImages().add(
+                            ProductColorImage.builder()
+                                    .productColor(color)
+                                    .imageUrl(url)
+                                    .sortOrder(order++)
+                                    .build()
+                    );
+                }
+            }
+        }
+
+        product.getColors().add(color);
+        return mapToResponse(productRepo.save(product));
+    }
+
+    @Transactional
+    public ProductResponse updateColorStock(Long productId, Long colorId, int newStock) {
+
+        Product product = productRepo.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
+
+        ProductColor color = colorRepo.findById(colorId)
+                .orElseThrow(() -> new RuntimeException("Color not found: " + colorId));
+
+        if (!color.getProduct().getId().equals(productId)) {
+            throw new RuntimeException("Color does not belong to this product");
+        }
+
+        color.setStock(newStock);
+        colorRepo.save(color);
+
+        return mapToResponse(productRepo.findById(productId).orElseThrow());
+    }
+
+    @Transactional
+    public ProductResponse deleteColor(Long productId, Long colorId) {
+
+        Product product = productRepo.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
+
+        ProductColor color = colorRepo.findById(colorId)
+                .orElseThrow(() -> new RuntimeException("Color not found: " + colorId));
+
+        if (!color.getProduct().getId().equals(productId)) {
+            throw new RuntimeException("Color does not belong to this product");
+        }
+
+        color.getImages().forEach(img -> imageUploadService.deleteImage(img.getImageUrl()));
+        product.getColors().remove(color);
+        colorRepo.delete(color);
+
+        return mapToResponse(productRepo.findById(productId).orElseThrow());
+    }
+
+    @Transactional
+    public void deleteProduct(Long id) {
+        Product product = productRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found: " + id));
+
+        imageUploadService.deleteImage(product.getImageUrl());
+        imageUploadService.deleteImage(product.getHoverImageUrl());
+        product.getColors().forEach(color ->
+                color.getImages().forEach(img -> imageUploadService.deleteImage(img.getImageUrl()))
+        );
+
+        productRepo.delete(product);
+    }
+
+    // =========================================================================
+    // CUSTOMER METHODS
+    // =========================================================================
+
+    // Customer — get single active product by id
     @Transactional(readOnly = true)
     public ProductResponse getById(Long id) {
-        return productMapper.toResponse(findOrThrow(id));
+        Product product = productRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found: " + id));
+        if (!"active".equals(product.getStatus())) {
+            throw new RuntimeException("Product not available");
+        }
+        return mapToResponse(product);
     }
 
+    // Customer — get single active product by SKU
     @Transactional(readOnly = true)
     public ProductResponse getBySku(String sku) {
-        Product product = productRepository.findBySku(sku)
-                .orElseThrow(() -> new EntityNotFoundException("Product not found with SKU: " + sku));
-        return productMapper.toResponse(product);
+        Product product = productRepo.findBySku(sku)
+                .orElseThrow(() -> new RuntimeException("Product not found with SKU: " + sku));
+        if (!"active".equals(product.getStatus())) {
+            throw new RuntimeException("Product not available");
+        }
+        return mapToResponse(product);
     }
 
+    // Customer — filtered + paginated listing
     @Transactional(readOnly = true)
     public Page<ProductResponse> getAll(
-            Long    categoryId,
-            Long    subcategoryId,
-            Long    brandId,
-            String  status,
-            Boolean isFeatured,
-            Boolean isExclusive,
+            Long     categoryId,
+            Long     subcategoryId,
+            Long     brandId,
+            String   status,
+            Boolean  isFeatured,
+            Boolean  isExclusive,
             Pageable pageable
     ) {
-        return productRepository
-                .findAllFiltered(categoryId, subcategoryId, brandId, status, isFeatured, isExclusive, pageable)
-                .map(productMapper::toResponse);
+        return productRepo
+                .findAllWithFilters(status, categoryId, subcategoryId, brandId, isFeatured, isExclusive, pageable)
+                .map(this::mapToResponse);
     }
 
+    // Customer — keyword search
     @Transactional(readOnly = true)
     public Page<ProductResponse> search(String keyword, Pageable pageable) {
-        return productRepository.searchByKeyword(keyword, pageable)
-                .map(productMapper::toResponse);
+        return productRepo
+                .searchByKeyword(keyword, pageable)
+                .map(this::mapToResponse);
     }
 
-    // ── Update ───────────────────────────────────────────────────────────────
+    // =========================================================================
+    // MAPPER
+    // =========================================================================
 
-    @Transactional
-    public ProductResponse update(Long id, ProductUpdateRequest request) {
-        Product product = findOrThrow(id);
+    private ProductResponse mapToResponse(Product p) {
+        ProductResponse res = new ProductResponse();
+        res.setId(p.getId());
+        res.setName(p.getName());
+        res.setSku(p.getSku());
+        res.setDescription(p.getDescription());
+        res.setPrice(p.getPrice());
+        res.setOldPrice(p.getOldPrice());
+        res.setStatus(p.getStatus());
+        res.setFeatured(p.isFeatured());
+        res.setExclusive(p.isExclusive());
+        res.setImageUrl(p.getImageUrl());
+        res.setHoverImageUrl(p.getHoverImageUrl());
+        res.setTotalStock(p.getTotalStock());
+        res.setCreatedAt(p.getCreatedAt());
+        res.setUpdatedAt(p.getUpdatedAt());
 
-        if (productRepository.existsBySkuAndIdNot(request.getSku(), id)) {
-            throw new IllegalArgumentException("SKU already exists: " + request.getSku());
+        if (p.getCategory() != null) {
+            res.setCategoryId(p.getCategory().getId());
+            res.setCategoryName(p.getCategory().getName());
+        }
+        if (p.getSubcategory() != null) {
+            res.setSubcategoryId(p.getSubcategory().getId());
+            res.setSubcategoryName(p.getSubcategory().getName());
+        }
+        if (p.getBrand() != null) {
+            res.setBrandId(p.getBrand().getId());
+            res.setBrandName(p.getBrand().getName());
         }
 
-        productMapper.updateEntity(request, product);
-        resolveRelations(product, request.getCategoryId(), request.getSubcategoryId(), request.getBrandId());
+        List<ProductColorResponse> colorResponses = p.getColors()
+                .stream()
+                .map(c -> {
+                    ProductColorResponse cr = new ProductColorResponse();
+                    cr.setId(c.getId());
+                    cr.setColorName(c.getColorName());
+                    cr.setColorHex(c.getColorHex());
+                    cr.setStock(c.getStock());
 
-        return productMapper.toResponse(productRepository.save(product));
+                    List<ProductColorImageResponse> imgList = c.getImages()
+                            .stream()
+                            .sorted(Comparator.comparingInt(ProductColorImage::getSortOrder))
+                            .map(img -> {
+                                ProductColorImageResponse ir = new ProductColorImageResponse();
+                                ir.setId(img.getId());
+                                ir.setImageUrl(img.getImageUrl());
+                                ir.setSortOrder(img.getSortOrder());
+                                return ir;
+                            })
+                            .collect(Collectors.toList());
+
+                    cr.setImages(imgList);
+                    return cr;
+                })
+                .collect(Collectors.toList());
+
+        res.setColors(colorResponses);
+        return res;
     }
 
-    // ── Delete ───────────────────────────────────────────────────────────────
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
 
-    @Transactional
-    public void delete(Long id) {
-        if (!productRepository.existsById(id)) {
-            throw new EntityNotFoundException("Product not found with id: " + id);
-        }
-        productRepository.deleteById(id);
+    private String generateSku(String productName) {
+        String base = productName.toUpperCase().replaceAll("[^A-Z0-9]", "");
+        base = base.substring(0, Math.min(6, base.length()));
+        return base + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
     }
 
-    // ── Image management ─────────────────────────────────────────────────────
-
-    @Transactional
-    public ProductResponse updateImageUrl(Long id, String imageUrl) {
-        Product product = findOrThrow(id);
-        // Delete old file from disk before replacing
-        if (product.getImageUrl() != null) {
-            imageUploadService.deleteImage(product.getImageUrl());
-        }
-        product.setImageUrl(imageUrl);
-        return productMapper.toResponse(productRepository.save(product));
+    private <T> T safeGet(List<T> list, int index, T defaultValue) {
+        return (list != null && list.size() > index) ? list.get(index) : defaultValue;
     }
 
-    @Transactional
-    public ProductResponse updateHoverImageUrl(Long id, String hoverImageUrl) {
-        Product product = findOrThrow(id);
-        if (product.getHoverImageUrl() != null) {
-            imageUploadService.deleteImage(product.getHoverImageUrl());
-        }
-        product.setHoverImageUrl(hoverImageUrl);
-        return productMapper.toResponse(productRepository.save(product));
-    }
-
-    @Transactional
-    public void deleteImageUrl(Long id) {
-        Product product = findOrThrow(id);
-        imageUploadService.deleteImage(product.getImageUrl());
-        product.setImageUrl(null);
-        productRepository.save(product);
-    }
-
-    @Transactional
-    public void deleteHoverImageUrl(Long id) {
-        Product product = findOrThrow(id);
-        imageUploadService.deleteImage(product.getHoverImageUrl());
-        product.setHoverImageUrl(null);
-        productRepository.save(product);
-    }
-
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    private Product findOrThrow(Long id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + id));
-    }
-
-    private void resolveRelations(Product product, Long categoryId, Long subcategoryId, Long brandId) {
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new EntityNotFoundException("Category not found with id: " + categoryId));
-        product.setCategory(category);
-
-        if (subcategoryId != null) {
-            Subcategory subcategory = subcategoryRepository.findById(subcategoryId)
-                    .orElseThrow(() -> new EntityNotFoundException("Subcategory not found with id: " + subcategoryId));
-            product.setSubcategory(subcategory);
-        } else {
-            product.setSubcategory(null);
-        }
-
-        if (brandId != null) {
-            Brand brand = brandRepository.findById(brandId)
-                    .orElseThrow(() -> new EntityNotFoundException("Brand not found with id: " + brandId));
-            product.setBrand(brand);
-        } else {
-            product.setBrand(null);
-        }
-    }
-
-    public Long getProductCount() {
-        return productRepository.count();
+    private int safeGetInt(List<Integer> list, int index, int defaultValue) {
+        return (list != null && list.size() > index && list.get(index) != null)
+                ? list.get(index) : defaultValue;
     }
 }

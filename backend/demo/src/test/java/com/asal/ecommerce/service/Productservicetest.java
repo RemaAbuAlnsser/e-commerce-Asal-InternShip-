@@ -1,559 +1,927 @@
 package com.asal.ecommerce.service;
 
+import com.asal.ecommerce.dto.ProductColorResponse;
 import com.asal.ecommerce.dto.ProductCreateRequest;
-import com.asal.ecommerce.dto.ProductResponse;
 import com.asal.ecommerce.dto.ProductUpdateRequest;
-import com.asal.ecommerce.mapper.ProductMapper;
-import com.asal.ecommerce.model.Brand;
-import com.asal.ecommerce.model.Category;
-import com.asal.ecommerce.model.Product;
-import com.asal.ecommerce.model.Subcategory;
-import com.asal.ecommerce.repository.BrandRepository;
-import com.asal.ecommerce.repository.CategoryRepository;
-import com.asal.ecommerce.repository.ProductRepository;
-import com.asal.ecommerce.repository.SubcategoryRepository;
-import jakarta.persistence.EntityNotFoundException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import com.asal.ecommerce.dto.ProductResponse;
+import com.asal.ecommerce.model.*;
+import com.asal.ecommerce.repository.*;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
+import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ProductService")
+@DisplayName("ProductService Unit Tests")
 class ProductServiceTest {
 
-    @Mock ProductRepository     productRepository;
-    @Mock CategoryRepository    categoryRepository;
-    @Mock SubcategoryRepository subcategoryRepository;
-    @Mock BrandRepository       brandRepository;
-    @Mock ProductMapper         productMapper;
-    @Mock ImageUploadService    imageUploadService;
+    // ── Mocks ──────────────────────────────────────────────────────────────────
+    @Mock private ProductRepository           productRepo;
+    @Mock private ProductColorRepository      colorRepo;
+    @Mock private ProductColorImageRepository colorImageRepo;
+    @Mock private CategoryRepository          categoryRepo;
+    @Mock private SubcategoryRepository       subcategoryRepo;
+    @Mock private BrandRepository             brandRepo;
+    @Mock private ImageUploadService          imageUploadService;
 
     @InjectMocks
-    ProductService productService;
+    private ProductService productService;
 
-    // ── Shared fixtures ───────────────────────────────────────────────────────
-
-    private Category    category;
-    private Subcategory subcategory;
-    private Brand       brand;
-    private Product     product;
-    private ProductResponse productResponse;
+    // ── Shared test fixtures ───────────────────────────────────────────────────
+    private Category    testCategory;
+    private Subcategory testSubcategory;
+    private Brand       testBrand;
+    private Product     testProduct;
+    private ProductColor testColor;
 
     @BeforeEach
     void setUp() {
-        category = new Category();
-        category.setId(1L);
-        category.setName("Electronics");
+        testCategory = new Category();
+        testCategory.setId(1L);
+        testCategory.setName("Electronics");
 
-        subcategory = new Subcategory();
-        subcategory.setId(2L);
-        subcategory.setName("Phones");
+        testSubcategory = new Subcategory();
+        testSubcategory.setId(2L);
+        testSubcategory.setName("Phones");
 
-        brand = new Brand();
-        brand.setId(3L);
-        brand.setName("Samsung");
+        testBrand = new Brand();
+        testBrand.setId(3L);
+        testBrand.setName("Samsung");
 
-        product = Product.builder()
+        testColor = ProductColor.builder()
                 .id(10L)
-                .name("Galaxy S24")
-                .sku("SAM-S24-001")
-                .price(new BigDecimal("999.99"))
+                .colorName("Black")
+                .colorHex("#000000")
                 .stock(50)
-                .status("active")
-                .isFeatured(false)
-                .isExclusive(false)
-                .category(category)
-                .subcategory(subcategory)
-                .brand(brand)
+                .images(new ArrayList<>())
                 .build();
 
-        productResponse = new ProductResponse();
-        productResponse.setId(10L);
-        productResponse.setName("Galaxy S24");
-        productResponse.setSku("SAM-S24-001");
-        productResponse.setPrice(new BigDecimal("999.99"));
-        productResponse.setStock(50);
-        productResponse.setStatus("active");
-        productResponse.setCategoryId(1L);
-        productResponse.setCategoryName("Electronics");
-        productResponse.setSubcategoryId(2L);
-        productResponse.setSubcategoryName("Phones");
-        productResponse.setBrandId(3L);
-        productResponse.setBrandName("Samsung");
+        testProduct = Product.builder()
+                .id(1L)
+                .name("Test Product")
+                .sku("TESTPR-ABC123")
+                .description("A test product")
+                .price(new BigDecimal("99.99"))
+                .oldPrice(new BigDecimal("129.99"))
+                .status("active")
+                .featured(false)
+                .exclusive(false)
+                .category(testCategory)
+                .subcategory(testSubcategory)
+                .brand(testBrand)
+                .imageUrl("/uploads/products/prime.jpg")
+                .hoverImageUrl("/uploads/products/hover.jpg")
+                .colors(new ArrayList<>(List.of(testColor)))
+                .build();
+
+        testColor.setProduct(testProduct);
     }
 
     // =========================================================================
-    // CREATE
+    // CREATE PRODUCT
     // =========================================================================
 
     @Nested
-    @DisplayName("create()")
-    class Create {
-
-        private ProductCreateRequest buildRequest() {
-            ProductCreateRequest req = new ProductCreateRequest();
-            req.setName("Galaxy S24");
-            req.setSku("SAM-S24-001");
-            req.setPrice(new BigDecimal("999.99"));
-            req.setStock(50);
-            req.setStatus("active");
-            req.setCategoryId(1L);
-            req.setSubcategoryId(2L);
-            req.setBrandId(3L);
-            return req;
-        }
+    @DisplayName("createProduct()")
+    class CreateProductTests {
 
         @Test
-        @DisplayName("saves product and returns response when SKU is unique")
-        void create_success() {
-            ProductCreateRequest req = buildRequest();
-            given(productRepository.existsBySku("SAM-S24-001")).willReturn(false);
-            given(productMapper.toEntity(req)).willReturn(product);
-            given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
-            given(subcategoryRepository.findById(2L)).willReturn(Optional.of(subcategory));
-            given(brandRepository.findById(3L)).willReturn(Optional.of(brand));
-            given(productRepository.save(product)).willReturn(product);
-            given(productMapper.toResponse(product)).willReturn(productResponse);
+        @DisplayName("should create product successfully with all fields")
+        void createProduct_withAllFields_returnsProductResponse() throws IOException {
+            // given
+            ProductCreateRequest req = buildCreateRequest();
+            MockMultipartFile primeImage = mockImageFile("prime.jpg");
+            MockMultipartFile hoverImage = mockImageFile("hover.jpg");
 
-            ProductResponse result = productService.create(req);
+            when(categoryRepo.findById(1L)).thenReturn(Optional.of(testCategory));
+            when(subcategoryRepo.findById(2L)).thenReturn(Optional.of(testSubcategory));
+            when(brandRepo.findById(3L)).thenReturn(Optional.of(testBrand));
+            when(imageUploadService.uploadProductImage(any())).thenReturn("/uploads/products/prime.jpg");
+            when(imageUploadService.uploadProductHoverImage(any())).thenReturn("/uploads/products/hover.jpg");
+            when(productRepo.save(any(Product.class))).thenAnswer(inv -> {
+                Product p = inv.getArgument(0);
+                p.setId(1L);
+                return p;
+            });
 
+            // when
+            ProductResponse result = productService.createProduct(
+                    req, primeImage, hoverImage,
+                    List.of("Black"), List.of("#000000"), List.of(50),
+                    List.of(List.of())
+            );
+
+            // then
             assertThat(result).isNotNull();
-            assertThat(result.getSku()).isEqualTo("SAM-S24-001");
+            assertThat(result.getName()).isEqualTo("Test Product");
+            assertThat(result.getPrice()).isEqualByComparingTo("99.99");
             assertThat(result.getCategoryName()).isEqualTo("Electronics");
-            then(productRepository).should().save(product);
+            assertThat(result.getImageUrl()).isEqualTo("/uploads/products/prime.jpg");
+            assertThat(result.getColors()).hasSize(1);
+            assertThat(result.getColors().get(0).getColorName()).isEqualTo("Black");
+            assertThat(result.getColors().get(0).getStock()).isEqualTo(50);
+            assertThat(result.getTotalStock()).isEqualTo(50);
+
+            verify(productRepo).save(any(Product.class));
+            verify(imageUploadService).uploadProductImage(primeImage);
+            verify(imageUploadService).uploadProductHoverImage(hoverImage);
         }
 
         @Test
-        @DisplayName("throws IllegalArgumentException when SKU already exists")
-        void create_duplicateSku_throws() {
-            ProductCreateRequest req = buildRequest();
-            given(productRepository.existsBySku("SAM-S24-001")).willReturn(true);
-
-            assertThatThrownBy(() -> productService.create(req))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("SAM-S24-001");
-
-            then(productRepository).should(never()).save(any());
-        }
-
-        @Test
-        @DisplayName("throws EntityNotFoundException when category does not exist")
-        void create_categoryNotFound_throws() {
-            ProductCreateRequest req = buildRequest();
-            given(productRepository.existsBySku(any())).willReturn(false);
-            given(productMapper.toEntity(req)).willReturn(product);
-            given(categoryRepository.findById(1L)).willReturn(Optional.empty());
-
-            assertThatThrownBy(() -> productService.create(req))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessageContaining("Category");
-        }
-
-        @Test
-        @DisplayName("throws EntityNotFoundException when subcategory does not exist")
-        void create_subcategoryNotFound_throws() {
-            ProductCreateRequest req = buildRequest();
-            given(productRepository.existsBySku(any())).willReturn(false);
-            given(productMapper.toEntity(req)).willReturn(product);
-            given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
-            given(subcategoryRepository.findById(2L)).willReturn(Optional.empty());
-
-            assertThatThrownBy(() -> productService.create(req))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessageContaining("Subcategory");
-        }
-
-        @Test
-        @DisplayName("throws EntityNotFoundException when brand does not exist")
-        void create_brandNotFound_throws() {
-            ProductCreateRequest req = buildRequest();
-            given(productRepository.existsBySku(any())).willReturn(false);
-            given(productMapper.toEntity(req)).willReturn(product);
-            given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
-            given(subcategoryRepository.findById(2L)).willReturn(Optional.of(subcategory));
-            given(brandRepository.findById(3L)).willReturn(Optional.empty());
-
-            assertThatThrownBy(() -> productService.create(req))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessageContaining("Brand");
-        }
-
-        @Test
-        @DisplayName("creates product without optional subcategory and brand")
-        void create_withoutSubcategoryAndBrand_success() {
-            ProductCreateRequest req = buildRequest();
+        @DisplayName("should create product without optional fields (no subcategory, brand, images)")
+        void createProduct_withoutOptionalFields_succeeds() throws IOException {
+            // given
+            ProductCreateRequest req = buildCreateRequest();
             req.setSubcategoryId(null);
             req.setBrandId(null);
 
-            product.setSubcategory(null);
-            product.setBrand(null);
+            when(categoryRepo.findById(1L)).thenReturn(Optional.of(testCategory));
+            when(productRepo.save(any())).thenAnswer(inv -> {
+                Product p = inv.getArgument(0);
+                p.setId(2L);
+                return p;
+            });
 
-            given(productRepository.existsBySku(any())).willReturn(false);
-            given(productMapper.toEntity(req)).willReturn(product);
-            given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
-            given(productRepository.save(product)).willReturn(product);
-            given(productMapper.toResponse(product)).willReturn(productResponse);
+            // when
+            ProductResponse result = productService.createProduct(
+                    req, null, null,
+                    List.of(), List.of(), List.of(), List.of()
+            );
 
-            ProductResponse result = productService.create(req);
-
+            // then
             assertThat(result).isNotNull();
-            then(subcategoryRepository).should(never()).findById(any());
-            then(brandRepository).should(never()).findById(any());
+            assertThat(result.getSubcategoryId()).isNull();
+            assertThat(result.getBrandId()).isNull();
+            assertThat(result.getImageUrl()).isNull();
+            assertThat(result.getColors()).isEmpty();
+            assertThat(result.getTotalStock()).isEqualTo(0);
+
+            verify(subcategoryRepo, never()).findById(any());
+            verify(brandRepo, never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("should create product with multiple colors and sub-images")
+        void createProduct_withMultipleColors_savesAllColors() throws IOException {
+            // given
+            ProductCreateRequest req = buildCreateRequest();
+            MockMultipartFile subImg1 = mockImageFile("sub1.jpg");
+            MockMultipartFile subImg2 = mockImageFile("sub2.jpg");
+
+            when(categoryRepo.findById(1L)).thenReturn(Optional.of(testCategory));
+            when(imageUploadService.uploadColorImage(any()))
+                    .thenReturn("/uploads/products/colors/sub1.jpg")
+                    .thenReturn("/uploads/products/colors/sub2.jpg");
+            when(productRepo.save(any())).thenAnswer(inv -> {
+                Product p = inv.getArgument(0);
+                p.setId(1L);
+                return p;
+            });
+
+            // when
+            ProductResponse result = productService.createProduct(
+                    req, null, null,
+                    List.of("Black", "White"),
+                    List.of("#000000", "#FFFFFF"),
+                    List.of(30, 20),
+                    List.of(List.of(subImg1), List.of(subImg2))
+            );
+
+            // then
+            assertThat(result.getColors()).hasSize(2);
+            assertThat(result.getTotalStock()).isEqualTo(50); // 30 + 20
+            assertThat(result.getColors().get(0).getColorName()).isEqualTo("Black");
+            assertThat(result.getColors().get(1).getColorName()).isEqualTo("White");
+        }
+
+        @Test
+        @DisplayName("should throw RuntimeException when category not found")
+        void createProduct_categoryNotFound_throwsException() {
+            // given
+            ProductCreateRequest req = buildCreateRequest();
+            when(categoryRepo.findById(99L)).thenReturn(Optional.empty());
+            req.setCategoryId(99L);
+
+            // then
+            assertThatThrownBy(() ->
+                    productService.createProduct(req, null, null, null, null, null, null)
+            ).isInstanceOf(RuntimeException.class)
+             .hasMessageContaining("Category not found: 99");
+
+            verify(productRepo, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should throw RuntimeException when subcategory not found")
+        void createProduct_subcategoryNotFound_throwsException() {
+            // given
+            ProductCreateRequest req = buildCreateRequest();
+            req.setSubcategoryId(99L);
+            when(categoryRepo.findById(1L)).thenReturn(Optional.of(testCategory));
+            when(subcategoryRepo.findById(99L)).thenReturn(Optional.empty());
+
+            // then
+            assertThatThrownBy(() ->
+                    productService.createProduct(req, null, null, null, null, null, null)
+            ).isInstanceOf(RuntimeException.class)
+             .hasMessageContaining("Subcategory not found: 99");
+        }
+
+        @Test
+        @DisplayName("should generate a SKU automatically on create")
+        void createProduct_generatesSku() throws IOException {
+            // given
+            ProductCreateRequest req = buildCreateRequest();
+            req.setName("Oxford Shoe");
+            when(categoryRepo.findById(1L)).thenReturn(Optional.of(testCategory));
+            when(productRepo.save(any())).thenAnswer(inv -> {
+                Product p = inv.getArgument(0);
+                p.setId(1L);
+                return p;
+            });
+
+            // when
+            ProductResponse result = productService.createProduct(
+                    req, null, null, null, null, null, null);
+
+            // then — SKU format: XXXXXX-XXXXXX
+            assertThat(result.getSku()).isNotBlank();
+            assertThat(result.getSku()).matches("^[A-Z0-9]{1,6}-[A-Z0-9]{6}$");
+        }
+
+        @Test
+        @DisplayName("should default status to 'active' when not provided")
+        void createProduct_nullStatus_defaultsToActive() throws IOException {
+            // given
+            ProductCreateRequest req = buildCreateRequest();
+            req.setStatus(null);
+            when(categoryRepo.findById(1L)).thenReturn(Optional.of(testCategory));
+            when(productRepo.save(any())).thenAnswer(inv -> {
+                Product p = inv.getArgument(0);
+                p.setId(1L);
+                return p;
+            });
+
+            // when
+            ProductResponse result = productService.createProduct(
+                    req, null, null, null, null, null, null);
+
+            // then
+            assertThat(result.getStatus()).isEqualTo("active");
         }
     }
 
     // =========================================================================
-    // READ
+    // GET ALL PRODUCTS (admin)
     // =========================================================================
 
     @Nested
-    @DisplayName("getById()")
-    class GetById {
+    @DisplayName("getAllProducts()")
+    class GetAllProductsTests {
 
         @Test
-        @DisplayName("returns response when product exists")
-        void getById_success() {
-            given(productRepository.findById(10L)).willReturn(Optional.of(product));
-            given(productMapper.toResponse(product)).willReturn(productResponse);
+        @DisplayName("should return all products as list")
+        void getAllProducts_returnsAllProducts() {
+            // given
+            Product second = Product.builder()
+                    .id(2L).name("Second").sku("SEC-001")
+                    .price(new BigDecimal("50.00")).status("active")
+                    .category(testCategory).colors(new ArrayList<>()).build();
 
-            ProductResponse result = productService.getById(10L);
+            when(productRepo.findAll()).thenReturn(List.of(testProduct, second));
 
-            assertThat(result.getId()).isEqualTo(10L);
+            // when
+            List<ProductResponse> result = productService.getAllProducts();
+
+            // then
+            assertThat(result).hasSize(2);
+            assertThat(result).extracting(ProductResponse::getName)
+                    .containsExactly("Test Product", "Second");
         }
 
         @Test
-        @DisplayName("throws EntityNotFoundException when product not found")
-        void getById_notFound_throws() {
-            given(productRepository.findById(99L)).willReturn(Optional.empty());
+        @DisplayName("should return empty list when no products exist")
+        void getAllProducts_noProducts_returnsEmptyList() {
+            when(productRepo.findAll()).thenReturn(Collections.emptyList());
+
+            List<ProductResponse> result = productService.getAllProducts();
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    // =========================================================================
+    // GET PRODUCT BY ID (admin)
+    // =========================================================================
+
+    @Nested
+    @DisplayName("getProductById()")
+    class GetProductByIdTests {
+
+        @Test
+        @DisplayName("should return product when found")
+        void getProductById_found_returnsProduct() {
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+
+            ProductResponse result = productService.getProductById(1L);
+
+            assertThat(result.getId()).isEqualTo(1L);
+            assertThat(result.getName()).isEqualTo("Test Product");
+            assertThat(result.getTotalStock()).isEqualTo(50);
+        }
+
+        @Test
+        @DisplayName("should throw RuntimeException when not found")
+        void getProductById_notFound_throwsException() {
+            when(productRepo.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> productService.getProductById(99L))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("Product not found: 99");
+        }
+    }
+
+    // =========================================================================
+    // CUSTOMER — GET BY ID
+    // =========================================================================
+
+    @Nested
+    @DisplayName("getById() — customer")
+    class CustomerGetByIdTests {
+
+        @Test
+        @DisplayName("should return active product")
+        void getById_activeProduct_returnsProduct() {
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+
+            ProductResponse result = productService.getById(1L);
+
+            assertThat(result.getId()).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("should throw when product is inactive")
+        void getById_inactiveProduct_throwsException() {
+            testProduct.setStatus("inactive");
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+
+            assertThatThrownBy(() -> productService.getById(1L))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("not available");
+        }
+
+        @Test
+        @DisplayName("should throw when product not found")
+        void getById_notFound_throwsException() {
+            when(productRepo.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> productService.getById(99L))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessageContaining("99");
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("Product not found: 99");
         }
     }
 
+    // =========================================================================
+    // CUSTOMER — GET BY SKU
+    // =========================================================================
+
     @Nested
-    @DisplayName("getBySku()")
-    class GetBySku {
+    @DisplayName("getBySku() — customer")
+    class GetBySkuTests {
 
         @Test
-        @DisplayName("returns response when SKU matches")
-        void getBySku_success() {
-            given(productRepository.findBySku("SAM-S24-001")).willReturn(Optional.of(product));
-            given(productMapper.toResponse(product)).willReturn(productResponse);
+        @DisplayName("should return active product by SKU")
+        void getBySku_activeProduct_returnsProduct() {
+            when(productRepo.findBySku("TESTPR-ABC123")).thenReturn(Optional.of(testProduct));
 
-            ProductResponse result = productService.getBySku("SAM-S24-001");
+            ProductResponse result = productService.getBySku("TESTPR-ABC123");
 
-            assertThat(result.getSku()).isEqualTo("SAM-S24-001");
+            assertThat(result.getSku()).isEqualTo("TESTPR-ABC123");
         }
 
         @Test
-        @DisplayName("throws EntityNotFoundException when SKU not found")
-        void getBySku_notFound_throws() {
-            given(productRepository.findBySku("UNKNOWN")).willReturn(Optional.empty());
+        @DisplayName("should throw when SKU not found")
+        void getBySku_notFound_throwsException() {
+            when(productRepo.findBySku("NOEXIST-000")).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> productService.getBySku("UNKNOWN"))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessageContaining("UNKNOWN");
+            assertThatThrownBy(() -> productService.getBySku("NOEXIST-000"))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("NOEXIST-000");
+        }
+
+        @Test
+        @DisplayName("should throw when product with SKU is inactive")
+        void getBySku_inactiveProduct_throwsException() {
+            testProduct.setStatus("draft");
+            when(productRepo.findBySku("TESTPR-ABC123")).thenReturn(Optional.of(testProduct));
+
+            assertThatThrownBy(() -> productService.getBySku("TESTPR-ABC123"))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("not available");
         }
     }
 
+    // =========================================================================
+    // CUSTOMER — GET ALL WITH FILTERS
+    // =========================================================================
+
     @Nested
-    @DisplayName("getAll()")
-    class GetAll {
+    @DisplayName("getAll() — customer paginated")
+    class GetAllPaginatedTests {
 
         @Test
-        @DisplayName("returns paged results with all filters applied")
-        void getAll_withFilters_success() {
-            Pageable pageable = PageRequest.of(0, 20);
-            Page<Product> page = new PageImpl<>(List.of(product));
+        @DisplayName("should return paginated products with filters applied")
+        void getAll_withFilters_returnsPaginatedResults() {
+            // given
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<Product> page = new PageImpl<>(List.of(testProduct), pageable, 1);
 
-            given(productRepository.findAllFiltered(1L, 2L, 3L, "active", true, false, pageable))
-                    .willReturn(page);
-            given(productMapper.toResponse(product)).willReturn(productResponse);
+            when(productRepo.findAllWithFilters(
+                    eq("active"), eq(1L), isNull(), isNull(), isNull(), isNull(), eq(pageable)
+            )).thenReturn(page);
 
-            Page<ProductResponse> result = productService.getAll(1L, 2L, 3L, "active", true, false, pageable);
+            // when
+            var result = productService.getAll(1L, null, null, "active", null, null, pageable);
 
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0).getName()).isEqualTo("Galaxy S24");
-        }
-
-        @Test
-        @DisplayName("returns all products when no filters given")
-        void getAll_noFilters_returnsAll() {
-            Pageable pageable = PageRequest.of(0, 20);
-            Page<Product> page = new PageImpl<>(List.of(product));
-
-            given(productRepository.findAllFiltered(null, null, null, null, null, null, pageable))
-                    .willReturn(page);
-            given(productMapper.toResponse(product)).willReturn(productResponse);
-
-            Page<ProductResponse> result = productService.getAll(null, null, null, null, null, null, pageable);
-
+            // then
             assertThat(result.getTotalElements()).isEqualTo(1);
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getCategoryId()).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("should return empty page when no products match filters")
+        void getAll_noMatchingProducts_returnsEmptyPage() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<Product> emptyPage = Page.empty(pageable);
+
+            when(productRepo.findAllWithFilters(any(), any(), any(), any(), any(), any(), any()))
+                    .thenReturn(emptyPage);
+
+            var result = productService.getAll(null, null, null, "active", null, null, pageable);
+
+            assertThat(result.getContent()).isEmpty();
+            assertThat(result.getTotalElements()).isEqualTo(0);
         }
     }
+
+    // =========================================================================
+    // CUSTOMER — SEARCH
+    // =========================================================================
 
     @Nested
     @DisplayName("search()")
-    class Search {
+    class SearchTests {
 
         @Test
-        @DisplayName("returns matching products by keyword")
-        void search_byName_success() {
+        @DisplayName("should return matching products by keyword")
+        void search_matchingKeyword_returnsProducts() {
             Pageable pageable = PageRequest.of(0, 20);
-            Page<Product> page = new PageImpl<>(List.of(product));
+            Page<Product> page = new PageImpl<>(List.of(testProduct), pageable, 1);
 
-            given(productRepository.searchByKeyword("galaxy", pageable)).willReturn(page);
-            given(productMapper.toResponse(product)).willReturn(productResponse);
+            when(productRepo.searchByKeyword(eq("test"), eq(pageable))).thenReturn(page);
 
-            Page<ProductResponse> result = productService.search("galaxy", pageable);
+            var result = productService.search("test", pageable);
 
             assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Test Product");
         }
 
         @Test
-        @DisplayName("returns empty page when keyword matches nothing")
-        void search_noMatch_returnsEmpty() {
+        @DisplayName("should return empty page when no keyword matches")
+        void search_noMatch_returnsEmptyPage() {
             Pageable pageable = PageRequest.of(0, 20);
-            given(productRepository.searchByKeyword("zzz", pageable)).willReturn(Page.empty());
+            when(productRepo.searchByKeyword(eq("xyz"), eq(pageable)))
+                    .thenReturn(Page.empty(pageable));
 
-            Page<ProductResponse> result = productService.search("zzz", pageable);
+            var result = productService.search("xyz", pageable);
 
             assertThat(result.getContent()).isEmpty();
         }
     }
 
     // =========================================================================
-    // UPDATE
+    // UPDATE PRODUCT
     // =========================================================================
 
     @Nested
-    @DisplayName("update()")
-    class Update {
+    @DisplayName("updateProduct()")
+    class UpdateProductTests {
 
-        private ProductUpdateRequest buildUpdateRequest() {
+        @Test
+        @DisplayName("should update basic fields successfully")
+        void updateProduct_basicFields_updatesCorrectly() throws IOException {
+            // given
             ProductUpdateRequest req = new ProductUpdateRequest();
-            req.setName("Galaxy S24 Ultra");
-            req.setSku("SAM-S24-001");      // same SKU — allowed
-            req.setPrice(new BigDecimal("1199.99"));
-            req.setStock(30);
-            req.setStatus("active");
-            req.setCategoryId(1L);
-            req.setSubcategoryId(2L);
-            req.setBrandId(3L);
-            return req;
+            req.setName("Updated Name");
+            req.setPrice(new BigDecimal("149.99"));
+            req.setStatus("inactive");
+            req.setFeatured(true);
+            req.setExclusive(false);
+
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(productRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            // when
+            ProductResponse result = productService.updateProduct(1L, req, null, null);
+
+            // then
+            assertThat(result.getName()).isEqualTo("Updated Name");
+            assertThat(result.getPrice()).isEqualByComparingTo("149.99");
+            assertThat(result.getStatus()).isEqualTo("inactive");
+            assertThat(result.isFeatured()).isTrue();
         }
 
         @Test
-        @DisplayName("updates and returns product when SKU is unchanged")
-        void update_sameSku_success() {
-            ProductUpdateRequest req = buildUpdateRequest();
-            given(productRepository.findById(10L)).willReturn(Optional.of(product));
-            given(productRepository.existsBySkuAndIdNot("SAM-S24-001", 10L)).willReturn(false);
-            given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
-            given(subcategoryRepository.findById(2L)).willReturn(Optional.of(subcategory));
-            given(brandRepository.findById(3L)).willReturn(Optional.of(brand));
-            given(productRepository.save(product)).willReturn(product);
-            given(productMapper.toResponse(product)).willReturn(productResponse);
+        @DisplayName("should replace prime image when new one provided")
+        void updateProduct_withNewPrimeImage_replacesImage() throws IOException {
+            // given
+            ProductUpdateRequest req = new ProductUpdateRequest();
+            req.setFeatured(false);
+            req.setExclusive(false);
+            MockMultipartFile newImage = mockImageFile("new-prime.jpg");
 
-            ProductResponse result = productService.update(10L, req);
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(imageUploadService.uploadProductImage(any()))
+                    .thenReturn("/uploads/products/new-prime.jpg");
+            when(productRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            assertThat(result).isNotNull();
-            then(productMapper).should().updateEntity(req, product);
+            // when
+            ProductResponse result = productService.updateProduct(1L, req, newImage, null);
+
+            // then
+            assertThat(result.getImageUrl()).isEqualTo("/uploads/products/new-prime.jpg");
+            verify(imageUploadService).deleteImage("/uploads/products/prime.jpg");
+            verify(imageUploadService).uploadProductImage(newImage);
         }
 
         @Test
-        @DisplayName("throws IllegalArgumentException when new SKU belongs to another product")
-        void update_duplicateSku_throws() {
-            ProductUpdateRequest req = buildUpdateRequest();
-            req.setSku("OTHER-SKU");
-            given(productRepository.findById(10L)).willReturn(Optional.of(product));
-            given(productRepository.existsBySkuAndIdNot("OTHER-SKU", 10L)).willReturn(true);
+        @DisplayName("should not replace image when no new image provided")
+        void updateProduct_withoutNewImage_keepsExistingImage() throws IOException {
+            // given
+            ProductUpdateRequest req = new ProductUpdateRequest();
+            req.setName("New Name");
+            req.setFeatured(false);
+            req.setExclusive(false);
 
-            assertThatThrownBy(() -> productService.update(10L, req))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("OTHER-SKU");
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(productRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            then(productRepository).should(never()).save(any());
+            // when
+            productService.updateProduct(1L, req, null, null);
+
+            // then
+            verify(imageUploadService, never()).uploadProductImage(any());
+            verify(imageUploadService, never()).deleteImage(any());
         }
 
         @Test
-        @DisplayName("throws EntityNotFoundException when product to update does not exist")
-        void update_productNotFound_throws() {
-            ProductUpdateRequest req = buildUpdateRequest();
-            given(productRepository.findById(99L)).willReturn(Optional.empty());
+        @DisplayName("should throw when product to update is not found")
+        void updateProduct_notFound_throwsException() {
+            when(productRepo.findById(99L)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> productService.update(99L, req))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessageContaining("99");
+            assertThatThrownBy(() ->
+                    productService.updateProduct(99L, new ProductUpdateRequest(), null, null)
+            ).isInstanceOf(RuntimeException.class)
+             .hasMessageContaining("Product not found: 99");
         }
 
         @Test
-        @DisplayName("clears subcategory and brand when set to null in request")
-        void update_clearOptionalRelations_success() {
-            ProductUpdateRequest req = buildUpdateRequest();
-            req.setSubcategoryId(null);
-            req.setBrandId(null);
+        @DisplayName("should update category when new categoryId provided")
+        void updateProduct_withNewCategory_updatesCategory() throws IOException {
+            // given
+            Category newCategory = new Category();
+            newCategory.setId(5L);
+            newCategory.setName("Fashion");
 
-            given(productRepository.findById(10L)).willReturn(Optional.of(product));
-            given(productRepository.existsBySkuAndIdNot(any(), eq(10L))).willReturn(false);
-            given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
-            given(productRepository.save(product)).willReturn(product);
-            given(productMapper.toResponse(product)).willReturn(productResponse);
+            ProductUpdateRequest req = new ProductUpdateRequest();
+            req.setCategoryId(5L);
+            req.setFeatured(false);
+            req.setExclusive(false);
 
-            productService.update(10L, req);
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(categoryRepo.findById(5L)).thenReturn(Optional.of(newCategory));
+            when(productRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            assertThat(product.getSubcategory()).isNull();
-            assertThat(product.getBrand()).isNull();
+            // when
+            ProductResponse result = productService.updateProduct(1L, req, null, null);
+
+            // then
+            assertThat(result.getCategoryName()).isEqualTo("Fashion");
         }
     }
 
     // =========================================================================
-    // DELETE
+    // ADD COLOR TO EXISTING PRODUCT
     // =========================================================================
 
     @Nested
-    @DisplayName("delete()")
-    class Delete {
+    @DisplayName("addColorToProduct()")
+    class AddColorTests {
 
         @Test
-        @DisplayName("deletes product when it exists")
-        void delete_success() {
-            given(productRepository.existsById(10L)).willReturn(true);
+        @DisplayName("should add new color variant to product")
+        void addColorToProduct_validData_addsColor() throws IOException {
+            // given
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(productRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            productService.delete(10L);
+            // when
+            ProductResponse result = productService.addColorToProduct(
+                    1L, "Red", "#FF0000", 25, List.of()
+            );
 
-            then(productRepository).should().deleteById(10L);
+            // then
+            assertThat(result.getColors()).hasSize(2); // Black (existing) + Red (new)
+            assertThat(result.getColors())
+                    .extracting(c -> c.getColorName())
+                    .contains("Red");
+            assertThat(result.getTotalStock()).isEqualTo(75); // 50 + 25
         }
 
         @Test
-        @DisplayName("throws EntityNotFoundException when product does not exist")
-        void delete_notFound_throws() {
-            given(productRepository.existsById(99L)).willReturn(false);
+        @DisplayName("should upload sub-images when adding color")
+        void addColorToProduct_withSubImages_uploadsImages() throws IOException {
+            // given
+            MockMultipartFile img1 = mockImageFile("red1.jpg");
+            MockMultipartFile img2 = mockImageFile("red2.jpg");
 
-            assertThatThrownBy(() -> productService.delete(99L))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessageContaining("99");
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(imageUploadService.uploadColorImage(img1)).thenReturn("/uploads/products/colors/red1.jpg");
+            when(imageUploadService.uploadColorImage(img2)).thenReturn("/uploads/products/colors/red2.jpg");
+            when(productRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            then(productRepository).should(never()).deleteById(any());
+            // when
+            ProductResponse result = productService.addColorToProduct(
+                    1L, "Red", "#FF0000", 25, List.of(img1, img2)
+            );
+
+            // then
+            ProductColorResponse newColor = result.getColors().stream()
+                    .filter(c -> c.getColorName().equals("Red"))
+                    .findFirst().orElseThrow();
+
+            assertThat(newColor.getImages()).hasSize(2);
+            verify(imageUploadService, times(2)).uploadColorImage(any());
+        }
+
+        @Test
+        @DisplayName("should throw when product not found")
+        void addColorToProduct_productNotFound_throwsException() {
+            when(productRepo.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() ->
+                    productService.addColorToProduct(99L, "Blue", "#0000FF", 10, List.of())
+            ).isInstanceOf(RuntimeException.class)
+             .hasMessageContaining("Product not found: 99");
         }
     }
 
     // =========================================================================
-    // IMAGE MANAGEMENT
+    // UPDATE COLOR STOCK
     // =========================================================================
 
     @Nested
-    @DisplayName("updateImageUrl()")
-    class UpdateImageUrl {
+    @DisplayName("updateColorStock()")
+    class UpdateColorStockTests {
 
         @Test
-        @DisplayName("deletes old image and saves new URL")
-        void updateImageUrl_replacesOldImage() {
-            product.setImageUrl("/uploads/products/old.jpg");
-            given(productRepository.findById(10L)).willReturn(Optional.of(product));
-            given(productRepository.save(product)).willReturn(product);
-            given(productMapper.toResponse(product)).willReturn(productResponse);
+        @DisplayName("should update stock of specific color")
+        void updateColorStock_validIds_updatesStock() {
+            // given
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(colorRepo.findById(10L)).thenReturn(Optional.of(testColor));
+            when(colorRepo.save(any())).thenReturn(testColor);
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
 
-            productService.updateImageUrl(10L, "/uploads/products/new.jpg");
+            // when
+            ProductResponse result = productService.updateColorStock(1L, 10L, 100);
 
-            then(imageUploadService).should().deleteImage("/uploads/products/old.jpg");
-            assertThat(product.getImageUrl()).isEqualTo("/uploads/products/new.jpg");
+            // then
+            assertThat(result.getColors().get(0).getStock()).isEqualTo(100);
+            verify(colorRepo).save(testColor);
         }
 
         @Test
-        @DisplayName("skips deletion when product has no existing image")
-        void updateImageUrl_noOldImage_skipsDelete() {
-            product.setImageUrl(null);
-            given(productRepository.findById(10L)).willReturn(Optional.of(product));
-            given(productRepository.save(product)).willReturn(product);
-            given(productMapper.toResponse(product)).willReturn(productResponse);
+        @DisplayName("should allow setting stock to zero")
+        void updateColorStock_toZero_succeeds() {
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(colorRepo.findById(10L)).thenReturn(Optional.of(testColor));
+            when(colorRepo.save(any())).thenReturn(testColor);
 
-            productService.updateImageUrl(10L, "/uploads/products/new.jpg");
+            ProductResponse result = productService.updateColorStock(1L, 10L, 0);
 
-            then(imageUploadService).should(never()).deleteImage(any());
+            assertThat(result.getTotalStock()).isEqualTo(0);
         }
 
         @Test
-        @DisplayName("throws EntityNotFoundException when product not found")
-        void updateImageUrl_productNotFound_throws() {
-            given(productRepository.findById(99L)).willReturn(Optional.empty());
+        @DisplayName("should throw when color does not belong to product")
+        void updateColorStock_colorNotBelongingToProduct_throwsException() {
+            // given — color belongs to product 99, not product 1
+            Product otherProduct = Product.builder().id(99L).build();
+            testColor.setProduct(otherProduct);
 
-            assertThatThrownBy(() -> productService.updateImageUrl(99L, "/uploads/products/x.jpg"))
-                    .isInstanceOf(EntityNotFoundException.class);
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(colorRepo.findById(10L)).thenReturn(Optional.of(testColor));
+
+            // then
+            assertThatThrownBy(() -> productService.updateColorStock(1L, 10L, 50))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("does not belong to this product");
         }
-    }
-
-    @Nested
-    @DisplayName("updateHoverImageUrl()")
-    class UpdateHoverImageUrl {
 
         @Test
-        @DisplayName("deletes old hover image and saves new URL")
-        void updateHoverImageUrl_replacesOldImage() {
-            product.setHoverImageUrl("/uploads/products/old-hover.jpg");
-            given(productRepository.findById(10L)).willReturn(Optional.of(product));
-            given(productRepository.save(product)).willReturn(product);
-            given(productMapper.toResponse(product)).willReturn(productResponse);
+        @DisplayName("should throw when color not found")
+        void updateColorStock_colorNotFound_throwsException() {
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(colorRepo.findById(99L)).thenReturn(Optional.empty());
 
-            productService.updateHoverImageUrl(10L, "/uploads/products/new-hover.jpg");
-
-            then(imageUploadService).should().deleteImage("/uploads/products/old-hover.jpg");
-            assertThat(product.getHoverImageUrl()).isEqualTo("/uploads/products/new-hover.jpg");
-        }
-    }
-
-    @Nested
-    @DisplayName("deleteImageUrl()")
-    class DeleteImageUrl {
-
-        @Test
-        @DisplayName("deletes file from disk and sets imageUrl to null")
-        void deleteImageUrl_success() {
-            product.setImageUrl("/uploads/products/img.jpg");
-            given(productRepository.findById(10L)).willReturn(Optional.of(product));
-            given(productRepository.save(product)).willReturn(product);
-
-            productService.deleteImageUrl(10L);
-
-            then(imageUploadService).should().deleteImage("/uploads/products/img.jpg");
-            assertThat(product.getImageUrl()).isNull();
+            assertThatThrownBy(() -> productService.updateColorStock(1L, 99L, 50))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("Color not found: 99");
         }
     }
 
+    // =========================================================================
+    // DELETE COLOR
+    // =========================================================================
+
     @Nested
-    @DisplayName("deleteHoverImageUrl()")
-    class DeleteHoverImageUrl {
+    @DisplayName("deleteColor()")
+    class DeleteColorTests {
 
         @Test
-        @DisplayName("deletes file from disk and sets hoverImageUrl to null")
-        void deleteHoverImageUrl_success() {
-            product.setHoverImageUrl("/uploads/products/hover.jpg");
-            given(productRepository.findById(10L)).willReturn(Optional.of(product));
-            given(productRepository.save(product)).willReturn(product);
+        @DisplayName("should delete color and its images from disk")
+        void deleteColor_validIds_deletesColorAndImages() {
+            // given
+            ProductColorImage img = ProductColorImage.builder()
+                    .id(100L)
+                    .imageUrl("/uploads/products/colors/black1.jpg")
+                    .productColor(testColor)
+                    .build();
+            testColor.setImages(new ArrayList<>(List.of(img)));
 
-            productService.deleteHoverImageUrl(10L);
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(colorRepo.findById(10L)).thenReturn(Optional.of(testColor));
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
 
-            then(imageUploadService).should().deleteImage("/uploads/products/hover.jpg");
-            assertThat(product.getHoverImageUrl()).isNull();
+            // when
+            productService.deleteColor(1L, 10L);
+
+            // then
+            verify(imageUploadService).deleteImage("/uploads/products/colors/black1.jpg");
+            verify(colorRepo).delete(testColor);
         }
+
+        @Test
+        @DisplayName("should throw when color does not belong to product")
+        void deleteColor_wrongProduct_throwsException() {
+            Product otherProduct = Product.builder().id(99L).build();
+            testColor.setProduct(otherProduct);
+
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+            when(colorRepo.findById(10L)).thenReturn(Optional.of(testColor));
+
+            assertThatThrownBy(() -> productService.deleteColor(1L, 10L))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("does not belong to this product");
+
+            verify(colorRepo, never()).delete(any());
+        }
+    }
+
+    // =========================================================================
+    // DELETE PRODUCT
+    // =========================================================================
+
+    @Nested
+    @DisplayName("deleteProduct()")
+    class DeleteProductTests {
+
+        @Test
+        @DisplayName("should delete product and all associated images")
+        void deleteProduct_validId_deletesProductAndImages() {
+            // given
+            ProductColorImage img = ProductColorImage.builder()
+                    .id(100L)
+                    .imageUrl("/uploads/products/colors/black1.jpg")
+                    .productColor(testColor)
+                    .build();
+            testColor.setImages(new ArrayList<>(List.of(img)));
+
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+
+            // when
+            productService.deleteProduct(1L);
+
+            // then
+            verify(imageUploadService).deleteImage("/uploads/products/prime.jpg");
+            verify(imageUploadService).deleteImage("/uploads/products/hover.jpg");
+            verify(imageUploadService).deleteImage("/uploads/products/colors/black1.jpg");
+            verify(productRepo).delete(testProduct);
+        }
+
+        @Test
+        @DisplayName("should throw when product not found")
+        void deleteProduct_notFound_throwsException() {
+            when(productRepo.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> productService.deleteProduct(99L))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("Product not found: 99");
+
+            verify(productRepo, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("should handle products with no images gracefully")
+        void deleteProduct_noImages_deletesCleanly() {
+            testProduct.setImageUrl(null);
+            testProduct.setHoverImageUrl(null);
+            testColor.setImages(new ArrayList<>());
+
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+
+            assertThatCode(() -> productService.deleteProduct(1L))
+                    .doesNotThrowAnyException();
+
+            verify(productRepo).delete(testProduct);
+        }
+    }
+
+    // =========================================================================
+    // TOTAL STOCK CALCULATION
+    // =========================================================================
+
+    @Nested
+    @DisplayName("totalStock calculation")
+    class TotalStockTests {
+
+        @Test
+        @DisplayName("should sum stock across all colors")
+        void totalStock_multipleColors_returnsSum() {
+            // given
+            ProductColor red = ProductColor.builder()
+                    .id(20L).colorName("Red").colorHex("#FF0000")
+                    .stock(30).images(new ArrayList<>()).product(testProduct).build();
+            ProductColor blue = ProductColor.builder()
+                    .id(30L).colorName("Blue").colorHex("#0000FF")
+                    .stock(20).images(new ArrayList<>()).product(testProduct).build();
+            testProduct.setColors(new ArrayList<>(List.of(testColor, red, blue))); // 50+30+20=100
+
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+
+            // when
+            ProductResponse result = productService.getProductById(1L);
+
+            // then
+            assertThat(result.getTotalStock()).isEqualTo(100);
+        }
+
+        @Test
+        @DisplayName("should return zero when product has no colors")
+        void totalStock_noColors_returnsZero() {
+            testProduct.setColors(new ArrayList<>());
+            when(productRepo.findById(1L)).thenReturn(Optional.of(testProduct));
+
+            ProductResponse result = productService.getProductById(1L);
+
+            assertThat(result.getTotalStock()).isEqualTo(0);
+        }
+    }
+
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
+
+    private ProductCreateRequest buildCreateRequest() {
+        ProductCreateRequest req = new ProductCreateRequest();
+        req.setName("Test Product");
+        req.setDescription("A test product");
+        req.setPrice(new BigDecimal("99.99"));
+        req.setOldPrice(new BigDecimal("129.99"));
+        req.setStatus("active");
+        req.setFeatured(false);
+        req.setExclusive(false);
+        req.setCategoryId(1L);
+        req.setSubcategoryId(2L);
+        req.setBrandId(3L);
+        return req;
+    }
+
+    private MockMultipartFile mockImageFile(String filename) {
+        return new MockMultipartFile(
+                "file", filename, "image/jpeg", "fake-image-bytes".getBytes()
+        );
     }
 }

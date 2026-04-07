@@ -1,484 +1,582 @@
-<div class="page-container">
-  <!-- Header Section -->
-  <div class="page-header">
+<!-- =========================================================================
+     ADMIN PRODUCTS PAGE
+     ========================================================================= -->
+<div class="admin-container">
+
+  <!-- Page Header -->
+  <div class="admin-header">
     <div class="header-content">
-      <div class="header-text">
-        <h1>Products Management</h1>
-        <p>Manage your product inventory and catalog with ease</p>
+      <div>
+        <h1>Products</h1>
+        <p>Manage your product catalog — colors, images, and stock</p>
       </div>
-      <div class="header-actions">
-        <button class="btn-primary" (click)="openProductModal()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          Add Product
-        </button>
-      </div>
+      <button class="btn btn-primary" (click)="openCreate()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Product
+      </button>
     </div>
   </div>
 
-  <!-- Stats Section -->
-  <div class="stats-section">
-    <div class="stat-card">
-      <div class="stat-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M21 16V8A2 2 0 0 0 19 6H5A2 2 0 0 0 3 8V16A2 2 0 0 0 5 18H19A2 2 0 0 0 21 16Z" stroke="currentColor" stroke-width="2"/>
-          <polyline points="7,6 7,4 17,4 17,6" stroke="currentColor" stroke-width="2"/>
+  <!-- Alerts -->
+  @if (success()) {
+    <div class="alert alert-success animate-slide-up">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+      </svg>
+      {{ success() }}
+    </div>
+  }
+
+  @if (error() && !showModal()) {
+    <div class="alert alert-danger animate-slide-up">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M12 8v4m0 4h.01"/>
+      </svg>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Search Bar -->
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+           fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.35-4.35"/>
+      </svg>
+      <input class="form-control search-input" type="text" placeholder="Search products…"
+             [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)">
+    </div>
+    <span class="search-count">{{ filteredProducts().length }} product{{ filteredProducts().length !== 1 ? 's' : '' }}</span>
+  </div>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">Loading products…</p>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!loading() && filteredProducts().length === 0) {
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M20 7l-8-4-8 4m16 0v10l-8 4m0-10L4 7m8 4v10"/>
         </svg>
       </div>
-      <div class="stat-info">
-        <h3>{{ totalProducts }}</h3>
-        <p>Total Products</p>
-      </div>
+      <h3>No products found</h3>
+      <p>{{ searchTerm() ? 'Try a different search term.' : 'Get started by adding your first product.' }}</p>
+      @if (!searchTerm()) {
+        <button class="btn btn-primary" (click)="openCreate()">Add First Product</button>
+      }
     </div>
-  </div>
-
-  <!-- Search and Filters -->
-  <div class="search-section">
-    <div class="search-bar">
-      <div class="search-input-container">
-        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-          <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <input 
-          type="text" 
-          class="search-input" 
-          placeholder="Search products..." 
-          [(ngModel)]="searchTerm"
-          (keyup.enter)="onSearch()"
-          (input)="onSearch()">
-        <button 
-          *ngIf="searchTerm" 
-          class="clear-search" 
-          (click)="searchTerm = ''; onSearch()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Advanced Filters -->
-    <div class="filters-section">
-      <div class="filter-group">
-        <label>Category</label>
-        <select [(ngModel)]="selectedCategoryId" (change)="onCategoryChange(selectedCategoryId)">
-          <option value="">All Categories</option>
-          <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label>Subcategory</label>
-        <select [(ngModel)]="selectedSubcategoryId" (change)="onFilter()" [disabled]="!selectedCategoryId">
-          <option value="">All Subcategories</option>
-          <option *ngFor="let subcategory of subcategories" [value]="subcategory.id">{{ subcategory.name }}</option>
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label>Brand</label>
-        <select [(ngModel)]="selectedBrandId" (change)="onFilter()">
-          <option value="">All Brands</option>
-          <option *ngFor="let brand of brands" [value]="brand.id">{{ brand.name }}</option>
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label>Status</label>
-        <select [(ngModel)]="selectedStatus" (change)="onFilter()">
-          <option value="">All Status</option>
-          <option *ngFor="let status of productStatuses" [value]="status.value">{{ status.label }}</option>
-        </select>
-      </div>
-
-      <div class="filter-group checkbox-group">
-        <label>
-          <input type="checkbox" [(ngModel)]="showFeaturedOnly" (change)="onFilter()">
-          Featured Only
-        </label>
-      </div>
-
-      <div class="filter-group checkbox-group">
-        <label>
-          <input type="checkbox" [(ngModel)]="showExclusiveOnly" (change)="onFilter()">
-          Exclusive Only
-        </label>
-      </div>
-
-      <button class="btn-secondary" (click)="clearFilters()">Clear Filters</button>
-    </div>
-  </div>
+  }
 
   <!-- Products Table -->
-  <div class="table-section">
-    <div class="table-header">
-      <h3>Products ({{ totalElements }})</h3>
-    </div>
-
-    <div class="table-container" *ngIf="!loading">
-      <table class="data-table">
+  @if (!loading() && filteredProducts().length > 0) {
+    <div class="table-container animate-fade-in">
+      <table class="table">
         <thead>
           <tr>
-            <th>Image</th>
-            <th>Product Details</th>
-            <th>Category</th>
-            <th>Brand</th>
+            <th>Product</th>
+            <th>SKU</th>
             <th>Price</th>
-            <th>Stock</th>
+            <th>Category</th>
+            <th>Colors / Stock</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let product of products" class="table-row">
-            <td>
-              <div class="product-image-container">
-                <div class="product-image">
-                  <!-- Show placeholder if no image URL -->
-                  <div *ngIf="!getImageUrl(product.imageUrl)" class="image-placeholder">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M21 19V5C21 3.9 20.1 3 19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 19 20.1 21 19Z" stroke="currentColor" stroke-width="2"/>
-                      <path d="M8.5 10C9.32843 10 10 9.32843 10 8.5C10 7.67157 9.32843 7 8.5 7C7.67157 7 7 7.67157 7 8.5C7 9.32843 7.67157 10 8.5 10Z" stroke="currentColor" stroke-width="2"/>
-                      <path d="M21 15L16 10L5 21" stroke="currentColor" stroke-width="2"/>
-                    </svg>
+          @for (product of filteredProducts(); track trackById($index, product)) {
+            <tr>
+              <!-- Product -->
+              <td>
+                <div class="product-cell">
+                  <div class="product-img-wrap">
+                    <img [src]="resolveImage(product.imageUrl)"
+                         [alt]="product.name"
+                         class="product-thumb"
+                         (error)="$any($event.target).src='assets/images/placeholder.png'">
                   </div>
-                  
-                  <!-- Show images if URLs exist -->
-                  <ng-container *ngIf="getImageUrl(product.imageUrl)">
-                    <img 
-                      [src]="getImageUrl(product.imageUrl)" 
-                      [alt]="product.name"
-                      class="main-image"
-                      [class.has-hover]="product.hoverImageUrl"
-                      (error)="onImageError($event)"
-                    />
-                    <img 
-                      *ngIf="product.hoverImageUrl && getImageUrl(product.hoverImageUrl)"
-                      [src]="getImageUrl(product.hoverImageUrl)" 
-                      [alt]="product.name + ' hover'"
-                      class="hover-image"
-                      (error)="onImageError($event)"
-                    />
-                  </ng-container>
+                  <div class="product-info">
+                    <span class="product-name">{{ product.name }}</span>
+                    <span class="product-meta">
+                      @if (product.featured) { <span class="badge badge-primary">Featured</span> }
+                      @if (product.exclusive) { <span class="badge badge-warning">Exclusive</span> }
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td>
-              <div class="product-details">
-                <h4>{{ product.name }}</h4>
-                <p class="sku">SKU: {{ product.sku }}</p>
-                <div class="product-badges">
-                  <span *ngIf="product.isFeatured" class="badge badge-featured">Featured</span>
-                  <span *ngIf="product.isExclusive" class="badge badge-exclusive">Exclusive</span>
+              </td>
+
+              <!-- SKU -->
+              <td>
+                <code class="sku-code">{{ product.sku }}</code>
+              </td>
+
+              <!-- Price -->
+              <td>
+                <div class="price-cell">
+                  <span class="price-current">${{ product.price | number:'1.2-2' }}</span>
+                  @if (product.oldPrice) {
+                    <span class="price-old">${{ product.oldPrice | number:'1.2-2' }}</span>
+                  }
                 </div>
-              </div>
-            </td>
-            <td>
-              <div class="category-info">
-                <span class="category">{{ product.categoryName }}</span>
-                <span *ngIf="product.subcategoryName" class="subcategory">{{ product.subcategoryName }}</span>
-              </div>
-            </td>
-            <td>
-              <span class="brand-name">{{ product.brandName }}</span>
-            </td>
-            <td>
-              <div class="price-info">
-                <span class="current-price">${{ product.price }}</span>
-                <span *ngIf="product.oldPrice && product.oldPrice > product.price" class="old-price">${{ product.oldPrice }}</span>
-              </div>
-            </td>
-            <td>
-              <span class="stock-count" [class.low-stock]="product.stock < 10">{{ product.stock }}</span>
-            </td>
-            <td>
-              <span class="status-badge" [ngClass]="getStatusClass(product.status)">
-                {{ product.status }}
-              </span>
-            </td>
-            <td>
-              <div class="action-buttons">
-                <button class="btn-icon" (click)="editProduct(product)" title="Edit">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M11 4H4A2 2 0 0 0 2 6V20A2 2 0 0 0 4 22H18A2 2 0 0 0 20 20V13" stroke="currentColor" stroke-width="2"/>
-                    <path d="M18.5 2.5A2.121 2.121 0 0 1 21 5L12 14L8 15L9 11L18.5 2.5Z" stroke="currentColor" stroke-width="2"/>
-                  </svg>
-                </button>
-                <button class="btn-icon" (click)="toggleProductStatus(product)" 
-                        [title]="product.status === 'active' ? 'Deactivate' : 'Activate'">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
-                  </svg>
-                </button>
-                <button class="btn-icon btn-danger" (click)="confirmDelete(product)" title="Delete">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M8 6V4A2 2 0 0 1 10 2H14A2 2 0 0 1 16 4V6M19 6V20A2 2 0 0 1 17 22H7A2 2 0 0 1 5 20V6H19Z" stroke="currentColor" stroke-width="2"/>
-                  </svg>
-                </button>
-              </div>
-            </td>
-          </tr>
+              </td>
+
+              <!-- Category -->
+              <td>
+                <span class="category-name">{{ product.categoryName }}</span>
+                @if (product.subcategoryName) {
+                  <br><span class="subcategory-name">{{ product.subcategoryName }}</span>
+                }
+              </td>
+
+              <!-- Colors / Stock -->
+              <td>
+                <div class="colors-cell">
+                  <div class="color-dots">
+                    @for (color of product.colors; track color.id) {
+                      <div class="color-dot-wrap" [title]="color.colorName + ' — ' + color.stock + ' units'">
+                        <span class="color-dot" [style.background]="color.colorHex"></span>
+                      </div>
+                    }
+                  </div>
+                  <span class="total-stock">
+                    <strong>{{ product.totalStock }}</strong> units
+                  </span>
+                </div>
+              </td>
+
+              <!-- Status -->
+              <td>
+                <span class="badge" [ngClass]="product.status === 'active' ? 'badge-success' : 'badge-gray'">
+                  {{ product.status }}
+                </span>
+              </td>
+
+              <!-- Actions -->
+              <td>
+                <div class="action-btns">
+                  <button class="btn btn-sm btn-secondary btn-icon" title="View"
+                          (click)="openView(product)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                  <button class="btn btn-sm btn-warning btn-icon" title="Edit"
+                          (click)="openEdit(product)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5
+                               m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                  </button>
+                  <button class="btn btn-sm btn-danger btn-icon" title="Delete"
+                          (click)="openDelete(product)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0
+                               01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0
+                               00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
         </tbody>
       </table>
+    </div>
+  }
 
-      <!-- Empty State -->
-      <div *ngIf="products.length === 0" class="empty-state">
-        <div class="empty-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-            <path d="M21 16V8A2 2 0 0 0 19 6H5A2 2 0 0 0 3 8V16A2 2 0 0 0 5 18H19A2 2 0 0 0 21 16Z" stroke="currentColor" stroke-width="2"/>
-            <polyline points="7,6 7,4 17,4 17,6" stroke="currentColor" stroke-width="2"/>
+</div>
+
+<!-- =========================================================================
+     CREATE / EDIT MODAL
+     ========================================================================= -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal modal-xl" (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="modal-header">
+        <h2>
+          {{ modalMode() === 'create' ? 'Add New Product' :
+             modalMode() === 'edit'   ? 'Edit Product' : 'Product Details' }}
+        </h2>
+        <button class="modal-close" (click)="closeModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none"
+               viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
           </svg>
-        </div>
-        <h3>No products found</h3>
-        <p>{{ searchTerm ? 'Try adjusting your search terms or filters' : 'Get started by adding your first product' }}</p>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div *ngIf="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading products...</p>
-    </div>
-
-    <!-- Pagination -->
-    <div class="pagination" *ngIf="totalPages > 1 && !loading">
-      <button class="btn-pagination" (click)="previousPage()" [disabled]="currentPage === 0">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        Previous
-      </button>
-      
-      <div class="page-numbers">
-        <button *ngFor="let page of [].constructor(totalPages); let i = index" 
-                class="page-number" 
-                [class.active]="i === currentPage"
-                (click)="goToPage(i)">
-          {{ i + 1 }}
         </button>
       </div>
-      
-      <button class="btn-pagination" (click)="nextPage()" [disabled]="currentPage === totalPages - 1">
-        Next
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-</div>
 
-<!-- Product Modal -->
-<div class="modal-overlay" *ngIf="showProductModal" (click)="closeProductModal()">
-  <div class="modal-content large-modal" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h2>{{ isEditingProduct ? 'Edit Product' : 'Add New Product' }}</h2>
-      <button class="modal-close" (click)="closeProductModal()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
+      <!-- Body -->
+      <div class="modal-body">
 
-    <form [formGroup]="productForm" (ngSubmit)="onSubmit()" class="modal-form">
-      <div class="form-grid">
-        <!-- Basic Information -->
-        <div class="form-section">
-          <h3>Basic Information</h3>
-          
-          <div class="form-group">
-            <label for="name">Product Name *</label>
-            <input type="text" id="name" formControlName="name" placeholder="Enter product name">
-            <div class="error-message" *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched">
-              Product name is required (min 2 characters)
-            </div>
-          </div>
+        @if (error()) {
+          <div class="alert alert-danger" style="margin-bottom: 1.25rem">{{ error() }}</div>
+        }
 
-          <div class="form-group">
-            <label for="sku">SKU *</label>
-            <input type="text" id="sku" formControlName="sku" placeholder="Enter product SKU">
-            <div class="error-message" *ngIf="productForm.get('sku')?.invalid && productForm.get('sku')?.touched">
-              SKU is required (min 3 characters)
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="description">Description</label>
-            <textarea id="description" formControlName="description" placeholder="Enter product description" rows="4"></textarea>
-          </div>
-        </div>
-
-        <!-- Pricing & Inventory -->
-        <div class="form-section">
-          <h3>Pricing & Inventory</h3>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="price">Price *</label>
-              <input type="number" id="price" formControlName="price" placeholder="0.00" step="0.01" min="0">
-              <div class="error-message" *ngIf="productForm.get('price')?.invalid && productForm.get('price')?.touched">
-                Price is required and must be >= 0
+        <!-- ── VIEW MODE ─────────────────────────────────────────────────── -->
+        @if (modalMode() === 'view' && selectedProduct(); as p) {
+          <div class="view-grid">
+            <!-- Images -->
+            <div class="view-images">
+              <div class="view-img-pair">
+                <div class="view-img-box">
+                  <img [src]="resolveImage(p.imageUrl)" [alt]="p.name">
+                  <span class="view-img-label">Prime</span>
+                </div>
+                <div class="view-img-box">
+                  <img [src]="resolveImage(p.hoverImageUrl)" [alt]="p.name + ' hover'">
+                  <span class="view-img-label">Hover</span>
+                </div>
               </div>
             </div>
-
-            <div class="form-group">
-              <label for="oldPrice">Old Price</label>
-              <input type="number" id="oldPrice" formControlName="oldPrice" placeholder="0.00" step="0.01" min="0">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="stock">Stock Quantity *</label>
-            <input type="number" id="stock" formControlName="stock" placeholder="0" min="0">
-            <div class="error-message" *ngIf="productForm.get('stock')?.invalid && productForm.get('stock')?.touched">
-              Stock quantity is required and must be >= 0
-            </div>
-          </div>
-        </div>
-
-        <!-- Categories & Brand -->
-        <div class="form-section">
-          <h3>Categories & Brand</h3>
-          
-          <div class="form-group">
-            <label for="categoryId">Category *</label>
-            <select id="categoryId" formControlName="categoryId" (change)="onCategoryChange(productForm.get('categoryId')?.value)">
-              <option value="">Select Category</option>
-              <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
-            </select>
-            <div class="error-message" *ngIf="productForm.get('categoryId')?.invalid && productForm.get('categoryId')?.touched">
-              Category is required
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="subcategoryId">Subcategory</label>
-            <select id="subcategoryId" formControlName="subcategoryId" [disabled]="!subcategories.length">
-              <option value="">Select Subcategory</option>
-              <option *ngFor="let subcategory of subcategories" [value]="subcategory.id">{{ subcategory.name }}</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="brandId">Brand *</label>
-            <select id="brandId" formControlName="brandId">
-              <option value="">Select Brand</option>
-              <option *ngFor="let brand of brands" [value]="brand.id">{{ brand.name }}</option>
-            </select>
-            <div class="error-message" *ngIf="productForm.get('brandId')?.invalid && productForm.get('brandId')?.touched">
-              Brand is required
-            </div>
-          </div>
-        </div>
-
-        <!-- Status & Features -->
-        <div class="form-section">
-          <h3>Status & Features</h3>
-          
-          <div class="form-group">
-            <label for="status">Status</label>
-            <select id="status" formControlName="status">
-              <option *ngFor="let status of productStatuses" [value]="status.value">{{ status.label }}</option>
-            </select>
-          </div>
-
-          <div class="checkbox-group">
-            <label>
-              <input type="checkbox" formControlName="isFeatured">
-              Featured Product
-            </label>
-          </div>
-
-          <div class="checkbox-group">
-            <label>
-              <input type="checkbox" formControlName="isExclusive">
-              Exclusive Product
-            </label>
-          </div>
-        </div>
-
-        <!-- Images -->
-        <div class="form-section full-width">
-          <h3>Product Images</h3>
-          
-          <div class="image-upload-section">
-            <div class="image-upload-group">
-              <label>Main Image</label>
-              <div class="image-upload-area">
-                <input type="file" (change)="onImageSelect($event, 'main')" accept="image/*" style="display: none" #mainImageInput>
-                <div class="image-preview" *ngIf="productImagePreview">
-                  <img [src]="productImagePreview" alt="Main image preview">
-                  <button type="button" class="remove-image" (click)="productImagePreview = null; productImageFile = null">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                  </button>
+            <!-- Details -->
+            <div class="view-details">
+              <div class="view-title-row">
+                <h3>{{ p.name }}</h3>
+                <code class="sku-code">{{ p.sku }}</code>
+              </div>
+              <p class="view-desc">{{ p.description }}</p>
+              <div class="view-price-row">
+                <span class="price-current large">${{ p.price | number:'1.2-2' }}</span>
+                @if (p.oldPrice) {
+                  <span class="price-old">${{ p.oldPrice | number:'1.2-2' }}</span>
+                  <span class="badge badge-danger">Sale</span>
+                }
+              </div>
+              <div class="view-meta-grid">
+                <div class="view-meta-item">
+                  <span class="meta-label">Category</span>
+                  <span>{{ p.categoryName }}</span>
                 </div>
-                <div class="upload-placeholder" *ngIf="!productImagePreview" (click)="mainImageInput.click()">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                    <path d="M21 15V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V15" stroke="currentColor" stroke-width="2"/>
-                    <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2"/>
-                    <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2"/>
+                <div class="view-meta-item">
+                  <span class="meta-label">Subcategory</span>
+                  <span>{{ p.subcategoryName ?? '—' }}</span>
+                </div>
+                <div class="view-meta-item">
+                  <span class="meta-label">Brand</span>
+                  <span>{{ p.brandName ?? '—' }}</span>
+                </div>
+                <div class="view-meta-item">
+                  <span class="meta-label">Status</span>
+                  <span class="badge" [ngClass]="p.status === 'active' ? 'badge-success' : 'badge-gray'">
+                    {{ p.status }}
+                  </span>
+                </div>
+                <div class="view-meta-item">
+                  <span class="meta-label">Total Stock</span>
+                  <strong>{{ p.totalStock }} units</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Colors -->
+          @if (p.colors.length > 0) {
+            <div class="colors-section">
+              <h4 class="section-heading">Color Variants</h4>
+              <div class="color-variants-grid">
+                @for (color of p.colors; track color.id) {
+                  <div class="color-variant-card">
+                    <div class="color-variant-header">
+                      <span class="color-swatch" [style.background]="color.colorHex"></span>
+                      <span class="color-variant-name">{{ color.colorName }}</span>
+                      <span class="color-variant-stock">{{ color.stock }} units</span>
+                    </div>
+                    @if (color.images.length > 0) {
+                      <div class="color-sub-imgs">
+                        @for (img of color.images; track img.id) {
+                          <img [src]="resolveImage(img.imageUrl)" [alt]="color.colorName"
+                               class="sub-img-thumb">
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        }
+
+        <!-- ── CREATE / EDIT FORM ────────────────────────────────────────── -->
+        @if (modalMode() === 'create' || modalMode() === 'edit') {
+
+          <!-- Section: Basic Info -->
+          <div class="form-section">
+            <h4 class="section-heading">Basic Information</h4>
+            <div class="form-grid-2">
+              <div class="form-group" style="grid-column: 1 / -1">
+                <label class="form-label">Product Name <span class="required">*</span></label>
+                <input class="form-control" type="text" placeholder="e.g. Classic Oxford Shoe"
+                       [(ngModel)]="form.name">
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1">
+                <label class="form-label">Description</label>
+                <textarea class="form-control form-textarea" rows="3"
+                          placeholder="Detailed product description…"
+                          [(ngModel)]="form.description"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Price <span class="required">*</span></label>
+                <div class="input-prefix-wrap">
+                  <span class="input-prefix">$</span>
+                  <input class="form-control input-with-prefix" type="number" min="0"
+                         placeholder="0.00" [(ngModel)]="form.price">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Old Price <span class="optional">(sale)</span></label>
+                <div class="input-prefix-wrap">
+                  <span class="input-prefix">$</span>
+                  <input class="form-control input-with-prefix" type="number" min="0"
+                         placeholder="0.00" [(ngModel)]="form.oldPrice">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Category <span class="required">*</span></label>
+                <select class="form-control form-select" [(ngModel)]="form.categoryId">
+                  <option [ngValue]="null">— select —</option>
+                  @for (cat of categories(); track cat.id) {
+                    <option [ngValue]="cat.id">{{ cat.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Subcategory</label>
+                <select class="form-control form-select" [(ngModel)]="form.subcategoryId">
+                  <option [ngValue]="null">— select —</option>
+                  @for (sub of filteredSubcategories(); track sub.id) {
+                    <option [ngValue]="sub.id">{{ sub.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Brand</label>
+                <select class="form-control form-select" [(ngModel)]="form.brandId">
+                  <option [ngValue]="null">— select —</option>
+                  @for (brand of brands(); track brand.id) {
+                    <option [ngValue]="brand.id">{{ brand.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Status</label>
+                <select class="form-control form-select" [(ngModel)]="form.status">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="draft">Draft</option>
+                </select>
+              </div>
+              <div class="form-group toggles-group" style="grid-column: 1 / -1">
+                <label class="toggle-label">
+                  <input type="checkbox" [(ngModel)]="form.featured">
+                  <span class="toggle-text">Featured product</span>
+                </label>
+                <label class="toggle-label">
+                  <input type="checkbox" [(ngModel)]="form.exclusive">
+                  <span class="toggle-text">Exclusive product</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Landing Page Images -->
+          <div class="form-section">
+            <h4 class="section-heading">Landing Page Images</h4>
+            <p class="section-hint">These two images appear on the product grid. Hover image swaps in on mouse-over.</p>
+            <div class="img-upload-pair">
+              <!-- Prime Image -->
+              <div class="form-group">
+                <label class="form-label">Prime Image <span class="required">*</span></label>
+                @if (form.primeImagePreview) {
+                  <div class="img-preview-box">
+                    <img [src]="form.primeImagePreview" alt="prime preview">
+                    <span class="img-preview-label">Prime</span>
+                  </div>
+                }
+                <label class="upload-area">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+                       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round"
+                          d="M3 16.5V19a2 2 0 002 2h14a2 2 0 002-2v-2.5M12 3v13M8 7l4-4 4 4"/>
                   </svg>
-                  <p>Click to upload main image</p>
-                </div>
+                  <span>{{ form.primeImagePreview ? 'Change image' : 'Click to upload' }}</span>
+                  <small>JPEG / PNG / WEBP · max 10 MB</small>
+                  <input type="file" accept="image/*" hidden (change)="onPrimeImageChange($event)">
+                </label>
               </div>
-            </div>
-
-            <div class="image-upload-group">
-              <label>Hover Image</label>
-              <div class="image-upload-area">
-                <input type="file" (change)="onImageSelect($event, 'hover')" accept="image/*" style="display: none" #hoverImageInput>
-                <div class="image-preview" *ngIf="hoverImagePreview">
-                  <img [src]="hoverImagePreview" alt="Hover image preview">
-                  <button type="button" class="remove-image" (click)="hoverImagePreview = null; hoverImageFile = null">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                  </button>
-                </div>
-                <div class="upload-placeholder" *ngIf="!hoverImagePreview" (click)="hoverImageInput.click()">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                    <path d="M21 15V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V15" stroke="currentColor" stroke-width="2"/>
-                    <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2"/>
-                    <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2"/>
+              <!-- Hover Image -->
+              <div class="form-group">
+                <label class="form-label">Hover Image <span class="required">*</span></label>
+                @if (form.hoverImagePreview) {
+                  <div class="img-preview-box">
+                    <img [src]="form.hoverImagePreview" alt="hover preview">
+                    <span class="img-preview-label">Hover</span>
+                  </div>
+                }
+                <label class="upload-area">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+                       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round"
+                          d="M15 10l4.55-4.55a2 2 0 012.83 2.83L17.83 12M12 3v6
+                             M3 16.5V19a2 2 0 002 2h14a2 2 0 002-2v-2.5"/>
                   </svg>
-                  <p>Click to upload hover image</p>
-                </div>
+                  <span>{{ form.hoverImagePreview ? 'Change image' : 'Click to upload' }}</span>
+                  <small>Same dimensions as prime image</small>
+                  <input type="file" accept="image/*" hidden (change)="onHoverImageChange($event)">
+                </label>
               </div>
             </div>
           </div>
-        </div>
+
+          <!-- Section: Color Variants -->
+          <div class="form-section">
+            <div class="section-heading-row">
+              <h4 class="section-heading" style="margin-bottom:0">Color Variants</h4>
+              <div class="total-stock-pill">
+                Total stock: <strong>{{ totalStock }}</strong>
+              </div>
+            </div>
+            <p class="section-hint">Each color has its own stock and gallery images shown on the product detail page.</p>
+
+            @for (color of form.colors; track trackByColor($index, color)) {
+              <div class="color-block">
+                <div class="color-block-header">
+                  <span class="color-swatch-input" [style.background]="color.colorHex"></span>
+                  <input class="form-control color-name-input" type="text"
+                         placeholder="Color name (e.g. Black)" [(ngModel)]="color.colorName">
+                  <input type="color" class="color-picker" [(ngModel)]="color.colorHex"
+                         [title]="color.colorHex">
+                  <button class="btn btn-sm btn-danger" (click)="removeColor($index)">Remove</button>
+                </div>
+
+                <div class="color-block-body">
+                  <!-- Stock -->
+                  <div class="form-group stock-field">
+                    <label class="form-label">Stock for {{ color.colorName || 'this color' }}</label>
+                    <div class="input-suffix-wrap">
+                      <input class="form-control" type="number" min="0" placeholder="0"
+                             [(ngModel)]="color.stock">
+                      <span class="input-suffix">units</span>
+                    </div>
+                  </div>
+
+                  <!-- Sub-images -->
+                  <div class="form-group sub-images-field">
+                    <label class="form-label">Sub-images <span class="optional">(detail page gallery · max 6)</span></label>
+                    <div class="sub-imgs-grid">
+                      @for (preview of color.subImagePreviews; track $index) {
+                        <div class="sub-img-slot filled">
+                          <img [src]="preview" alt="sub-image">
+                          <button class="sub-img-remove" (click)="removeSubImage($index, $index)">×</button>
+                        </div>
+                      }
+                      @if (color.subImagePreviews.length < 6) {
+                        <label class="sub-img-slot add-slot">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none"
+                               viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" d="M12 4v16m8-8H4"/>
+                          </svg>
+                          <span>Add</span>
+                          <input type="file" accept="image/*" multiple hidden
+                                 (change)="onSubImageChange($event, $index)">
+                        </label>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <button class="btn btn-secondary add-color-btn" (click)="addColor()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                   viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" d="M12 4v16m8-8H4"/>
+              </svg>
+              Add Color Variant
+            </button>
+          </div>
+
+        }
       </div>
 
-      <div class="modal-actions">
-        <button type="button" class="btn-secondary" (click)="closeProductModal()">Cancel</button>
-        <button type="submit" class="btn-primary" [disabled]="productForm.invalid || submitting">
-          <span *ngIf="submitting" class="spinner-small"></span>
-          {{ isEditingProduct ? 'Update Product' : 'Create Product' }}
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">
+          {{ modalMode() === 'view' ? 'Close' : 'Cancel' }}
+        </button>
+        @if (modalMode() !== 'view') {
+          <button class="btn btn-primary" (click)="save()" [disabled]="saving()">
+            @if (saving()) {
+              <span class="btn-spinner"></span> Saving…
+            } @else {
+              {{ modalMode() === 'create' ? 'Create Product' : 'Save Changes' }}
+            }
+          </button>
+        }
+      </div>
+
+    </div>
+  </div>
+}
+
+<!-- =========================================================================
+     DELETE CONFIRM MODAL
+     ========================================================================= -->
+@if (showDeleteModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Delete Product</h2>
+        <button class="modal-close" (click)="closeModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none"
+               viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
         </button>
       </div>
-    </form>
+      <div class="modal-body">
+        <div class="delete-warning">
+          <div class="delete-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round"
+                    d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0
+                       001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            </svg>
+          </div>
+          <p>Are you sure you want to delete <strong>{{ selectedProduct()?.name }}</strong>?</p>
+          <p class="delete-sub">This will permanently remove the product, all its color variants, and all associated images.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-danger" (click)="confirmDelete()" [disabled]="deleting()">
+          @if (deleting()) {
+            <span class="btn-spinner"></span> Deleting…
+          } @else {
+            Yes, Delete
+          }
+        </button>
+      </div>
+    </div>
   </div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div class="modal-overlay" *ngIf="showDeleteModal" (click)="showDeleteModal = false">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h2>Confirm Delete</h2>
-    </div>
-    <div class="modal-body">
-      <p>Are you sure you want to delete the product "{{ itemToDelete?.name }}"?</p>
-      <p class="warning-text">This action cannot be undone.</p>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-secondary" (click)="showDeleteModal = false">Cancel</button>
-      <button class="btn-danger" (click)="deleteProduct()">Delete Product</button>
-    </div>
-  </div>
-</div>
+}
