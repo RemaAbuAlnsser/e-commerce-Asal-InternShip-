@@ -1,6 +1,7 @@
 package com.asal.ecommerce.controller.admin;
 
 import com.asal.ecommerce.dto.*;
+import com.asal.ecommerce.exception.GlobalExceptionHandler;
 import com.asal.ecommerce.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
@@ -43,9 +44,10 @@ class ProductControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Standalone MockMvc — no security, no filter chain
+        // Standalone MockMvc — no security, no filter chain, but with exception handler
         mockMvc = MockMvcBuilders
                 .standaloneSetup(productController)
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
 
         objectMapper = new ObjectMapper();
@@ -223,8 +225,8 @@ class ProductControllerTest {
         }
 
         @Test
-        @DisplayName("should return 500 when service throws RuntimeException")
-        void createProduct_serviceThrows_returns500() throws Exception {
+        @DisplayName("should return 400 when service throws RuntimeException")
+        void createProduct_serviceThrows_returns400() throws Exception {
             when(productService.createProduct(
                     any(), any(), any(), any(), any(), any(), any()
             )).thenThrow(new RuntimeException("Category not found: 99"));
@@ -236,7 +238,7 @@ class ProductControllerTest {
                     .param("status",    "active")
                     .param("featured",  "false")
                     .param("exclusive", "false"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
         }
     }
 
@@ -345,13 +347,13 @@ class ProductControllerTest {
         }
 
         @Test
-        @DisplayName("should return 500 when product not found")
-        void getProduct_notFound_returns500() throws Exception {
+        @DisplayName("should return 400 when product not found")
+        void getProduct_notFound_returns400() throws Exception {
             when(productService.getProductById(99L))
                     .thenThrow(new RuntimeException("Product not found: 99"));
 
             mockMvc.perform(get("/api/admin/products/99"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
         }
     }
 
@@ -413,8 +415,8 @@ class ProductControllerTest {
         }
 
         @Test
-        @DisplayName("should return 500 when product to update not found")
-        void updateProduct_notFound_returns500() throws Exception {
+        @DisplayName("should return 400 when product to update not found")
+        void updateProduct_notFound_returns400() throws Exception {
             when(productService.updateProduct(eq(99L), any(), any(), any()))
                     .thenThrow(new RuntimeException("Product not found: 99"));
 
@@ -423,7 +425,7 @@ class ProductControllerTest {
                     .param("featured",  "false")
                     .param("exclusive", "false")
                     .with(req -> { req.setMethod("PUT"); return req; }))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
         }
     }
 
@@ -496,8 +498,8 @@ class ProductControllerTest {
         }
 
         @Test
-        @DisplayName("should return 500 when product not found")
-        void addColor_productNotFound_returns500() throws Exception {
+        @DisplayName("should return 400 when product not found")
+        void addColor_productNotFound_returns400() throws Exception {
             when(productService.addColorToProduct(eq(99L), any(), any(), anyInt(), any()))
                     .thenThrow(new RuntimeException("Product not found: 99"));
 
@@ -505,7 +507,7 @@ class ProductControllerTest {
                     .param("colorName", "Green")
                     .param("colorHex",  "#00FF00")
                     .param("stock",     "5"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
         }
     }
 
@@ -560,25 +562,25 @@ class ProductControllerTest {
         }
 
         @Test
-        @DisplayName("should return 500 when color not found")
-        void updateColorStock_colorNotFound_returns500() throws Exception {
+        @DisplayName("should return 400 when color not found")
+        void updateColorStock_colorNotFound_returns400() throws Exception {
             when(productService.updateColorStock(1L, 99L, 50))
                     .thenThrow(new RuntimeException("Color not found: 99"));
 
             mockMvc.perform(patch("/api/admin/products/1/colors/99/stock")
                     .param("stock", "50"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
         }
 
         @Test
-        @DisplayName("should return 500 when color does not belong to product")
-        void updateColorStock_wrongProduct_returns500() throws Exception {
+        @DisplayName("should return 400 when color does not belong to product")
+        void updateColorStock_wrongProduct_returns400() throws Exception {
             when(productService.updateColorStock(2L, 10L, 50))
                     .thenThrow(new RuntimeException("Color does not belong to this product"));
 
             mockMvc.perform(patch("/api/admin/products/2/colors/10/stock")
                     .param("stock", "50"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
         }
     }
 
@@ -621,23 +623,23 @@ class ProductControllerTest {
         }
 
         @Test
-        @DisplayName("should return 500 when color not found")
-        void deleteColor_notFound_returns500() throws Exception {
+        @DisplayName("should return 400 when color not found")
+        void deleteColor_notFound_returns400() throws Exception {
             when(productService.deleteColor(1L, 99L))
                     .thenThrow(new RuntimeException("Color not found: 99"));
 
             mockMvc.perform(delete("/api/admin/products/1/colors/99"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
         }
 
         @Test
-        @DisplayName("should return 500 when color does not belong to product")
-        void deleteColor_wrongProduct_returns500() throws Exception {
+        @DisplayName("should return 400 when color does not belong to product")
+        void deleteColor_wrongProduct_returns400() throws Exception {
             when(productService.deleteColor(2L, 10L))
                     .thenThrow(new RuntimeException("Color does not belong to this product"));
 
             mockMvc.perform(delete("/api/admin/products/2/colors/10"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
         }
     }
 
@@ -673,13 +675,13 @@ class ProductControllerTest {
         }
 
         @Test
-        @DisplayName("should return 500 when product not found")
-        void deleteProduct_notFound_returns500() throws Exception {
+        @DisplayName("should return 400 when product not found")
+        void deleteProduct_notFound_returns400() throws Exception {
             doThrow(new RuntimeException("Product not found: 99"))
                     .when(productService).deleteProduct(99L);
 
             mockMvc.perform(delete("/api/admin/products/99"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
         }
 
         @Test

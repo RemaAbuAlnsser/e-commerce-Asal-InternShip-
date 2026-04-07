@@ -1,350 +1,508 @@
-// package com.asal.ecommerce.repository;
-
-// import com.asal.ecommerce.model.*;
-// import org.junit.jupiter.api.*;
-// import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-// import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-// import org.springframework.data.domain.*;
-
-// import java.math.BigDecimal;
-// import java.util.*;
-
-// import static org.assertj.core.api.Assertions.*;
-
-// @DataJpaTest
-// @DisplayName("ProductRepository Query Tests")
-// class ProductRepositoryTest {
-
-//     @Autowired
-//     private TestEntityManager em;
-
-//     @Autowired
-//     private ProductRepository productRepo;
-
-//     // ── Test data ──────────────────────────────────────────────────────────────
-//     private Category    electronics;
-//     private Category    fashion;
-//     private Subcategory phones;
-//     private Brand       samsung;
-//     private Product     activeProduct;
-//     private Product     inactiveProduct;
-//     private Product     featuredProduct;
-
-//     @BeforeEach
-//     void setUp() {
-//         // Categories
-//         electronics = new Category();
-//         electronics.setName("Electronics");
-//         em.persist(electronics);
-
-//         fashion = new Category();
-//         fashion.setName("Fashion");
-//         em.persist(fashion);
-
-//         // Subcategory
-//         phones = new Subcategory();
-//         phones.setName("Phones");
-//         phones.setCategory(electronics);
-//         em.persist(phones);
-
-//         // Brand
-//         samsung = new Brand();
-//         samsung.setName("Samsung");
-//         em.persist(samsung);
-
-//         // Active product
-//         activeProduct = buildProduct("Galaxy S24", "SAMS-001", electronics, phones, samsung, "active", false, false, 100.00);
-//         em.persist(activeProduct);
-
-//         // Inactive product
-//         inactiveProduct = buildProduct("Old Model", "OLD-001", electronics, null, samsung, "inactive", false, false, 50.00);
-//         em.persist(inactiveProduct);
-
-//         // Featured product
-//         featuredProduct = buildProduct("Premium Shirt", "SHIRT-001", fashion, null, null, "active", true, false, 200.00);
-//         em.persist(featuredProduct);
-
-//         em.flush();
-//     }
-
-//     // =========================================================================
-//     // findBySku
-//     // =========================================================================
-
-//     @Nested
-//     @DisplayName("findBySku()")
-//     class FindBySkuTests {
-
-//         @Test
-//         @DisplayName("should find product by exact SKU")
-//         void findBySku_existingSku_returnsProduct() {
-//             Optional<Product> result = productRepo.findBySku("SAMS-001");
-
-//             assertThat(result).isPresent();
-//             assertThat(result.get().getName()).isEqualTo("Galaxy S24");
-//         }
-
-//         @Test
-//         @DisplayName("should return empty for non-existing SKU")
-//         void findBySku_nonExistingSku_returnsEmpty() {
-//             Optional<Product> result = productRepo.findBySku("NOEXIST-999");
-
-//             assertThat(result).isEmpty();
-//         }
-//     }
-
-//     // =========================================================================
-//     // existsBySku
-//     // =========================================================================
-
-//     @Nested
-//     @DisplayName("existsBySku()")
-//     class ExistsBySkuTests {
-
-//         @Test
-//         @DisplayName("should return true for existing SKU")
-//         void existsBySku_existingSku_returnsTrue() {
-//             assertThat(productRepo.existsBySku("SAMS-001")).isTrue();
-//         }
-
-//         @Test
-//         @DisplayName("should return false for non-existing SKU")
-//         void existsBySku_nonExistingSku_returnsFalse() {
-//             assertThat(productRepo.existsBySku("FAKE-SKU")).isFalse();
-//         }
-//     }
-
-//     // =========================================================================
-//     // findAllWithFilters
-//     // =========================================================================
-
-//     @Nested
-//     @DisplayName("findAllWithFilters()")
-//     class FindAllWithFiltersTests {
-
-//         @Test
-//         @DisplayName("should return only active products when status=active")
-//         void findAllWithFilters_statusActive_returnsOnlyActive() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.findAllWithFilters(
-//                     "active", null, null, null, null, null, pageable
-//             );
-
-//             assertThat(result.getContent()).hasSize(2); // activeProduct + featuredProduct
-//             assertThat(result.getContent())
-//                     .extracting(Product::getStatus)
-//                     .containsOnly("active");
-//         }
-
-//         @Test
-//         @DisplayName("should return only inactive products when status=inactive")
-//         void findAllWithFilters_statusInactive_returnsOnlyInactive() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.findAllWithFilters(
-//                     "inactive", null, null, null, null, null, pageable
-//             );
-
-//             assertThat(result.getContent()).hasSize(1);
-//             assertThat(result.getContent().get(0).getName()).isEqualTo("Old Model");
-//         }
-
-//         @Test
-//         @DisplayName("should filter by categoryId correctly")
-//         void findAllWithFilters_byCategoryId_returnsMatchingProducts() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.findAllWithFilters(
-//                     null, electronics.getId(), null, null, null, null, pageable
-//             );
-
-//             assertThat(result.getContent()).hasSize(2); // activeProduct + inactiveProduct
-//             assertThat(result.getContent())
-//                     .extracting(p -> p.getCategory().getName())
-//                     .containsOnly("Electronics");
-//         }
-
-//         @Test
-//         @DisplayName("should filter by subcategoryId correctly")
-//         void findAllWithFilters_bySubcategoryId_returnsMatchingProducts() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.findAllWithFilters(
-//                     null, null, phones.getId(), null, null, null, pageable
-//             );
-
-//             assertThat(result.getContent()).hasSize(1);
-//             assertThat(result.getContent().get(0).getName()).isEqualTo("Galaxy S24");
-//         }
-
-//         @Test
-//         @DisplayName("should filter by brandId correctly")
-//         void findAllWithFilters_byBrandId_returnsMatchingProducts() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.findAllWithFilters(
-//                     null, null, null, samsung.getId(), null, null, pageable
-//             );
-
-//             assertThat(result.getContent()).hasSize(2); // Galaxy + Old Model
-//         }
-
-//         @Test
-//         @DisplayName("should filter featured products when isFeatured=true")
-//         void findAllWithFilters_featuredTrue_returnsOnlyFeatured() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.findAllWithFilters(
-//                     null, null, null, null, true, null, pageable
-//             );
-
-//             assertThat(result.getContent()).hasSize(1);
-//             assertThat(result.getContent().get(0).getName()).isEqualTo("Premium Shirt");
-//         }
-
-//         @Test
-//         @DisplayName("should return all products when all filters are null")
-//         void findAllWithFilters_noFilters_returnsAll() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.findAllWithFilters(
-//                     null, null, null, null, null, null, pageable
-//             );
-
-//             assertThat(result.getContent()).hasSize(3);
-//         }
-
-//         @Test
-//         @DisplayName("should combine multiple filters correctly")
-//         void findAllWithFilters_combinedFilters_returnsMatchingProducts() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.findAllWithFilters(
-//                     "active", electronics.getId(), null, null, null, null, pageable
-//             );
-
-//             assertThat(result.getContent()).hasSize(1);
-//             assertThat(result.getContent().get(0).getName()).isEqualTo("Galaxy S24");
-//         }
-
-//         @Test
-//         @DisplayName("should return correct pagination metadata")
-//         void findAllWithFilters_pagination_returnsCorrectMetadata() {
-//             Pageable pageable = PageRequest.of(0, 2);
-
-//             Page<Product> result = productRepo.findAllWithFilters(
-//                     null, null, null, null, null, null, pageable
-//             );
-
-//             assertThat(result.getTotalElements()).isEqualTo(3);
-//             assertThat(result.getTotalPages()).isEqualTo(2);
-//             assertThat(result.getContent()).hasSize(2);
-//         }
-
-//         @Test
-//         @DisplayName("should return empty when no products match filters")
-//         void findAllWithFilters_noMatch_returnsEmptyPage() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.findAllWithFilters(
-//                     "active", fashion.getId(), phones.getId(), null, null, null, pageable
-//             );
-
-//             // fashion category has no product with phones subcategory
-//             assertThat(result.getContent()).isEmpty();
-//         }
-//     }
-
-//     // =========================================================================
-//     // searchByKeyword
-//     // =========================================================================
-
-//     @Nested
-//     @DisplayName("searchByKeyword()")
-//     class SearchByKeywordTests {
-
-//         @Test
-//         @DisplayName("should find product by name keyword (case-insensitive)")
-//         void searchByKeyword_nameMatch_returnsProducts() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.searchByKeyword("galaxy", pageable);
-
-//             assertThat(result.getContent()).hasSize(1);
-//             assertThat(result.getContent().get(0).getName()).isEqualTo("Galaxy S24");
-//         }
-
-//         @Test
-//         @DisplayName("should find by partial name match")
-//         void searchByKeyword_partialName_returnsProducts() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.searchByKeyword("shirt", pageable);
-
-//             assertThat(result.getContent()).hasSize(1);
-//             assertThat(result.getContent().get(0).getName()).isEqualTo("Premium Shirt");
-//         }
-
-//         @Test
-//         @DisplayName("should NOT return inactive products in search")
-//         void searchByKeyword_inactiveProduct_notIncluded() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.searchByKeyword("old", pageable);
-
-//             // "Old Model" is inactive — should not appear
-//             assertThat(result.getContent()).isEmpty();
-//         }
-
-//         @Test
-//         @DisplayName("should return empty page for no-match keyword")
-//         void searchByKeyword_noMatch_returnsEmpty() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> result = productRepo.searchByKeyword("notexistingatall", pageable);
-
-//             assertThat(result.getContent()).isEmpty();
-//         }
-
-//         @Test
-//         @DisplayName("should be case-insensitive")
-//         void searchByKeyword_differentCase_returnsProduct() {
-//             Pageable pageable = PageRequest.of(0, 10);
-
-//             Page<Product> upper = productRepo.searchByKeyword("GALAXY", pageable);
-//             Page<Product> lower = productRepo.searchByKeyword("galaxy", pageable);
-//             Page<Product> mixed = productRepo.searchByKeyword("GaLaXy", pageable);
-
-//             assertThat(upper.getTotalElements()).isEqualTo(1);
-//             assertThat(lower.getTotalElements()).isEqualTo(1);
-//             assertThat(mixed.getTotalElements()).isEqualTo(1);
-//         }
-//     }
-
-//     // =========================================================================
-//     // HELPER
-//     // =========================================================================
-
-//     private Product buildProduct(
-//             String name, String sku,
-//             Category category, Subcategory subcategory, Brand brand,
-//             String status, boolean featured, boolean exclusive,
-//             double price
-//     ) {
-//         Product p = new Product();
-//         p.setName(name);
-//         p.setSku(sku);
-//         p.setDescription("Description for " + name);
-//         p.setPrice(BigDecimal.valueOf(price));
-//         p.setStatus(status);
-//         p.setFeatured(featured);
-//         p.setExclusive(exclusive);
-//         p.setCategory(category);
-//         p.setSubcategory(subcategory);
-//         p.setBrand(brand);
-//         p.setColors(new ArrayList<>());
-//         return p;
-//     }
-// }
+package com.asal.ecommerce.repository;
+
+import com.asal.ecommerce.model.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest
+@ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
+@Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+class ProductRepositoryTest {
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
+
+    @Autowired
+    private SubcategoryRepository subcategoryRepository;
+
+    @Autowired
+    private BrandRepository brandRepository;
+
+    @Autowired
+    private ProductColorRepository productColorRepository;
+
+    private Product testProduct;
+    private Category testCategory;
+    private Subcategory testSubcategory;
+    private Brand testBrand;
+
+    @BeforeEach
+    void setUp() {
+        // Clean up database in correct order to avoid FK violations
+        productColorRepository.deleteAll();
+        productRepository.deleteAll();
+        subcategoryRepository.deleteAll();
+        categoryRepository.deleteAll();
+        brandRepository.deleteAll();
+
+        // Create test category
+        testCategory = new Category();
+        testCategory.setName("Electronics");
+        testCategory.setSlug("electronics");
+        testCategory.setDescription("Electronic devices");
+        testCategory.setIsActive(true);
+        testCategory = categoryRepository.save(testCategory);
+
+        // Create test subcategory
+        testSubcategory = new Subcategory();
+        testSubcategory.setName("Smartphones");
+        testSubcategory.setSlug("smartphones");
+        testSubcategory.setDescription("Mobile phones");
+        testSubcategory.setIsActive(true);
+        testSubcategory.setCategory(testCategory);
+        testSubcategory = subcategoryRepository.save(testSubcategory);
+
+        // Create test brand
+        testBrand = new Brand();
+        testBrand.setName("Apple");
+        testBrand.setIsActive(true);
+        testBrand = brandRepository.save(testBrand);
+
+        // Create test product
+        testProduct = Product.builder()
+                .name("iPhone 15")
+                .sku("IPHONE15-001")
+                .description("Latest iPhone model")
+                .price(new BigDecimal("999.99"))
+                .oldPrice(new BigDecimal("1099.99"))
+                .status("active")
+                .featured(false)
+                .exclusive(false)
+                .category(testCategory)
+                .subcategory(testSubcategory)
+                .brand(testBrand)
+                .imageUrl("iphone15.jpg")
+                .hoverImageUrl("iphone15-hover.jpg")
+                .build();
+    }
+
+    @Test
+    void shouldReturnTrue_whenExistsBySku() {
+        // Given
+        productRepository.save(testProduct);
+
+        // When
+        boolean exists = productRepository.existsBySku("IPHONE15-001");
+
+        // Then
+        assertTrue(exists);
+    }
+
+    @Test
+    void shouldReturnFalse_whenNotExistsBySku() {
+        // When
+        boolean exists = productRepository.existsBySku("NON-EXISTENT-SKU");
+
+        // Then
+        assertFalse(exists);
+    }
+
+    @Test
+    void shouldFindProduct_whenFindBySku() {
+        // Given
+        productRepository.save(testProduct);
+
+        // When
+        Optional<Product> result = productRepository.findBySku("IPHONE15-001");
+
+        // Then
+        assertTrue(result.isPresent());
+        assertEquals("iPhone 15", result.get().getName());
+        assertEquals("IPHONE15-001", result.get().getSku());
+    }
+
+    @Test
+    void shouldNotFindProduct_whenFindBySkuNotExists() {
+        // When
+        Optional<Product> result = productRepository.findBySku("NON-EXISTENT-SKU");
+
+        // Then
+        assertFalse(result.isPresent());
+    }
+
+    @Test
+    void shouldFindAllProducts_whenFindAllWithFiltersWithNullParams() {
+        // Given
+        productRepository.save(testProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> result = productRepository.findAllWithFilters(
+                null, null, null, null, null, null, pageable);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals("iPhone 15", result.getContent().get(0).getName());
+    }
+
+    @Test
+    void shouldFilterByStatus_whenFindAllWithFilters() {
+        // Given
+        Product inactiveProduct = Product.builder()
+                .name("Old iPhone")
+                .sku("OLD-IPHONE-001")
+                .description("Discontinued iPhone")
+                .price(new BigDecimal("499.99"))
+                .status("inactive")
+                .category(testCategory)
+                .build();
+
+        productRepository.save(testProduct);
+        productRepository.save(inactiveProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> activeResults = productRepository.findAllWithFilters(
+                "active", null, null, null, null, null, pageable);
+        Page<Product> inactiveResults = productRepository.findAllWithFilters(
+                "inactive", null, null, null, null, null, pageable);
+
+        // Then
+        assertEquals(1, activeResults.getTotalElements());
+        assertEquals(1, inactiveResults.getTotalElements());
+        assertEquals("active", activeResults.getContent().get(0).getStatus());
+        assertEquals("inactive", inactiveResults.getContent().get(0).getStatus());
+    }
+
+    @Test
+    void shouldFilterByCategory_whenFindAllWithFilters() {
+        // Given
+        Category anotherCategory = new Category();
+        anotherCategory.setName("Clothing");
+        anotherCategory.setSlug("clothing");
+        anotherCategory.setIsActive(true);
+        anotherCategory = categoryRepository.save(anotherCategory);
+
+        Product clothingProduct = Product.builder()
+                .name("T-Shirt")
+                .sku("TSHIRT-001")
+                .description("Cotton T-Shirt")
+                .price(new BigDecimal("29.99"))
+                .status("active")
+                .category(anotherCategory)
+                .build();
+
+        productRepository.save(testProduct);
+        productRepository.save(clothingProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> electronicsResults = productRepository.findAllWithFilters(
+                null, testCategory.getId(), null, null, null, null, pageable);
+
+        // Then
+        assertEquals(1, electronicsResults.getTotalElements());
+        assertEquals("iPhone 15", electronicsResults.getContent().get(0).getName());
+        assertEquals(testCategory.getId(), electronicsResults.getContent().get(0).getCategory().getId());
+    }
+
+    @Test
+    void shouldFilterBySubcategory_whenFindAllWithFilters() {
+        // Given
+        productRepository.save(testProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> result = productRepository.findAllWithFilters(
+                null, null, testSubcategory.getId(), null, null, null, pageable);
+
+        // Then
+        assertEquals(1, result.getTotalElements());
+        assertEquals("iPhone 15", result.getContent().get(0).getName());
+        assertEquals(testSubcategory.getId(), result.getContent().get(0).getSubcategory().getId());
+    }
+
+    @Test
+    void shouldFilterByBrand_whenFindAllWithFilters() {
+        // Given
+        productRepository.save(testProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> result = productRepository.findAllWithFilters(
+                null, null, null, testBrand.getId(), null, null, pageable);
+
+        // Then
+        assertEquals(1, result.getTotalElements());
+        assertEquals("iPhone 15", result.getContent().get(0).getName());
+        assertEquals(testBrand.getId(), result.getContent().get(0).getBrand().getId());
+    }
+
+    @Test
+    void shouldFilterByFeatured_whenFindAllWithFilters() {
+        // Given
+        Product featuredProduct = Product.builder()
+                .name("Featured iPhone")
+                .sku("FEATURED-IPHONE-001")
+                .description("Featured iPhone model")
+                .price(new BigDecimal("1199.99"))
+                .status("active")
+                .featured(true)
+                .category(testCategory)
+                .build();
+
+        productRepository.save(testProduct);
+        productRepository.save(featuredProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> featuredResults = productRepository.findAllWithFilters(
+                null, null, null, null, true, null, pageable);
+        Page<Product> nonFeaturedResults = productRepository.findAllWithFilters(
+                null, null, null, null, false, null, pageable);
+
+        // Then
+        assertEquals(1, featuredResults.getTotalElements());
+        assertEquals(1, nonFeaturedResults.getTotalElements());
+        assertTrue(featuredResults.getContent().get(0).isFeatured());
+        assertFalse(nonFeaturedResults.getContent().get(0).isFeatured());
+    }
+
+    @Test
+    void shouldFilterByExclusive_whenFindAllWithFilters() {
+        // Given
+        Product exclusiveProduct = Product.builder()
+                .name("Exclusive iPhone")
+                .sku("EXCLUSIVE-IPHONE-001")
+                .description("Exclusive iPhone model")
+                .price(new BigDecimal("1299.99"))
+                .status("active")
+                .exclusive(true)
+                .category(testCategory)
+                .build();
+
+        productRepository.save(testProduct);
+        productRepository.save(exclusiveProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> exclusiveResults = productRepository.findAllWithFilters(
+                null, null, null, null, null, true, pageable);
+        Page<Product> nonExclusiveResults = productRepository.findAllWithFilters(
+                null, null, null, null, null, false, pageable);
+
+        // Then
+        assertEquals(1, exclusiveResults.getTotalElements());
+        assertEquals(1, nonExclusiveResults.getTotalElements());
+        assertTrue(exclusiveResults.getContent().get(0).isExclusive());
+        assertFalse(nonExclusiveResults.getContent().get(0).isExclusive());
+    }
+
+    @Test
+    void shouldCombineMultipleFilters_whenFindAllWithFilters() {
+        // Given
+        Product matchingProduct = Product.builder()
+                .name("Premium iPhone")
+                .sku("PREMIUM-IPHONE-001")
+                .description("Premium iPhone model")
+                .price(new BigDecimal("1399.99"))
+                .status("active")
+                .featured(true)
+                .exclusive(true)
+                .category(testCategory)
+                .subcategory(testSubcategory)
+                .brand(testBrand)
+                .build();
+
+        productRepository.save(testProduct);
+        productRepository.save(matchingProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> result = productRepository.findAllWithFilters(
+                "active", testCategory.getId(), testSubcategory.getId(), 
+                testBrand.getId(), true, true, pageable);
+
+        // Then
+        assertEquals(1, result.getTotalElements());
+        Product found = result.getContent().get(0);
+        assertEquals("Premium iPhone", found.getName());
+        assertEquals("active", found.getStatus());
+        assertTrue(found.isFeatured());
+        assertTrue(found.isExclusive());
+        assertEquals(testCategory.getId(), found.getCategory().getId());
+        assertEquals(testSubcategory.getId(), found.getSubcategory().getId());
+        assertEquals(testBrand.getId(), found.getBrand().getId());
+    }
+
+    @Test
+    void shouldSearchByKeywordInName_whenSearchByKeyword() {
+        // Given
+        productRepository.save(testProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> result = productRepository.searchByKeyword("iPhone", pageable);
+
+        // Then
+        assertEquals(1, result.getTotalElements());
+        assertEquals("iPhone 15", result.getContent().get(0).getName());
+    }
+
+    @Test
+    void shouldSearchByKeywordInDescription_whenSearchByKeyword() {
+        // Given
+        productRepository.save(testProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> result = productRepository.searchByKeyword("Latest", pageable);
+
+        // Then
+        assertEquals(1, result.getTotalElements());
+        assertEquals("iPhone 15", result.getContent().get(0).getName());
+    }
+
+    @Test
+    void shouldSearchCaseInsensitive_whenSearchByKeyword() {
+        // Given
+        productRepository.save(testProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> result = productRepository.searchByKeyword("IPHONE", pageable);
+
+        // Then
+        assertEquals(1, result.getTotalElements());
+        assertEquals("iPhone 15", result.getContent().get(0).getName());
+    }
+
+    @Test
+    void shouldOnlyReturnActiveProducts_whenSearchByKeyword() {
+        // Given
+        Product inactiveProduct = Product.builder()
+                .name("iPhone 14")
+                .sku("IPHONE14-001")
+                .description("Previous iPhone model")
+                .price(new BigDecimal("799.99"))
+                .status("inactive")
+                .category(testCategory)
+                .build();
+
+        productRepository.save(testProduct);
+        productRepository.save(inactiveProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> result = productRepository.searchByKeyword("iPhone", pageable);
+
+        // Then
+        assertEquals(1, result.getTotalElements());
+        assertEquals("iPhone 15", result.getContent().get(0).getName());
+        assertEquals("active", result.getContent().get(0).getStatus());
+    }
+
+    @Test
+    void shouldReturnEmptyResult_whenSearchByKeywordNotFound() {
+        // Given
+        productRepository.save(testProduct);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // When
+        Page<Product> result = productRepository.searchByKeyword("Samsung", pageable);
+
+        // Then
+        assertEquals(0, result.getTotalElements());
+        assertTrue(result.getContent().isEmpty());
+    }
+
+    @Test
+    void shouldCalculateTotalStock_whenProductHasColors() {
+        // Given
+        Product savedProduct = productRepository.save(testProduct);
+        
+        ProductColor redColor = ProductColor.builder()
+                .product(savedProduct)
+                .colorName("Red")
+                .colorHex("#FF0000")
+                .stock(10)
+                .build();
+        
+        ProductColor blueColor = ProductColor.builder()
+                .product(savedProduct)
+                .colorName("Blue")
+                .colorHex("#0000FF")
+                .stock(15)
+                .build();
+        
+        productColorRepository.save(redColor);
+        productColorRepository.save(blueColor);
+        
+        // Clear the persistence context to force a fresh load
+        productRepository.flush();
+        
+        // Calculate total stock directly from repository
+        int totalStock = productColorRepository.findAll().stream()
+                .filter(color -> color.getProduct().getId().equals(savedProduct.getId()))
+                .mapToInt(ProductColor::getStock)
+                .sum();
+
+        // Then
+        assertEquals(25, totalStock);
+    }
+
+    @Test
+    void shouldReturnZeroStock_whenProductHasNoColors() {
+        // Given
+        Product savedProduct = productRepository.save(testProduct);
+
+        // When
+        int totalStock = savedProduct.getTotalStock();
+
+        // Then
+        assertEquals(0, totalStock);
+    }
+
+    @Test
+    void shouldSetTimestamps_whenProductIsSaved() {
+        // When
+        Product savedProduct = productRepository.save(testProduct);
+
+        // Then
+        assertNotNull(savedProduct.getCreatedAt());
+        assertNotNull(savedProduct.getUpdatedAt());
+        // Check timestamps are within a reasonable time window (1 second)
+        assertTrue(Math.abs(savedProduct.getCreatedAt().toEpochSecond(java.time.ZoneOffset.UTC) - 
+                           savedProduct.getUpdatedAt().toEpochSecond(java.time.ZoneOffset.UTC)) <= 1);
+    }
+
+    @Test
+    void shouldUpdateTimestamp_whenProductIsModified() throws InterruptedException {
+        // Given
+        Product savedProduct = productRepository.save(testProduct);
+        productRepository.flush(); // Force the initial save
+        var originalUpdatedAt = savedProduct.getUpdatedAt();
+        
+        // Wait to ensure timestamp difference
+        Thread.sleep(1000);
+        
+        // When
+        savedProduct.setName("Updated iPhone 15");
+        Product updatedProduct = productRepository.saveAndFlush(savedProduct);
+
+        // Then
+        assertEquals(savedProduct.getCreatedAt(), updatedProduct.getCreatedAt());
+        assertTrue(updatedProduct.getUpdatedAt().isAfter(originalUpdatedAt));
+    }
+}

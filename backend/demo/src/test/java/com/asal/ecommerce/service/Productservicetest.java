@@ -179,6 +179,8 @@ class ProductServiceTest {
             MockMultipartFile subImg2 = mockImageFile("sub2.jpg");
 
             when(categoryRepo.findById(1L)).thenReturn(Optional.of(testCategory));
+            when(subcategoryRepo.findById(2L)).thenReturn(Optional.of(testSubcategory));
+            when(brandRepo.findById(3L)).thenReturn(Optional.of(testBrand));
             when(imageUploadService.uploadColorImage(any()))
                     .thenReturn("/uploads/products/colors/sub1.jpg")
                     .thenReturn("/uploads/products/colors/sub2.jpg");
@@ -244,6 +246,8 @@ class ProductServiceTest {
             ProductCreateRequest req = buildCreateRequest();
             req.setName("Oxford Shoe");
             when(categoryRepo.findById(1L)).thenReturn(Optional.of(testCategory));
+            when(subcategoryRepo.findById(2L)).thenReturn(Optional.of(testSubcategory));
+            when(brandRepo.findById(3L)).thenReturn(Optional.of(testBrand));
             when(productRepo.save(any())).thenAnswer(inv -> {
                 Product p = inv.getArgument(0);
                 p.setId(1L);
@@ -266,6 +270,8 @@ class ProductServiceTest {
             ProductCreateRequest req = buildCreateRequest();
             req.setStatus(null);
             when(categoryRepo.findById(1L)).thenReturn(Optional.of(testCategory));
+            when(subcategoryRepo.findById(2L)).thenReturn(Optional.of(testSubcategory));
+            when(brandRepo.findById(3L)).thenReturn(Optional.of(testBrand));
             when(productRepo.save(any())).thenAnswer(inv -> {
                 Product p = inv.getArgument(0);
                 p.setId(1L);
