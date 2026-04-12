@@ -4,6 +4,7 @@ import { RouterOutlet, Router, NavigationEnd, RouterLink } from '@angular/router
 import { filter, Subscription } from 'rxjs';
 import { DashboardService } from '../../../services/dashboard.service';
 import { NotificationService } from '../../../services/notification.service';
+import { SiteConfigService } from '../../../services/site-config.service';
 import { Notification } from '../../../models/notification.model';
 
 @Component({
@@ -40,6 +41,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     public router: Router,
     private dashboardService: DashboardService,
     public notifService: NotificationService,
+    public siteConfig: SiteConfigService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);

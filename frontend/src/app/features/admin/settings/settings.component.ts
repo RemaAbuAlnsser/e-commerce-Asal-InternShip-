@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Settings, SiteImage, SettingsService } from '../../../services/settings.service';
+import { SiteConfigService } from '../../../services/site-config.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -45,7 +46,10 @@ export class SettingsComponent implements OnInit {
 
   readonly backendUrl = environment.backendUrl;
 
-  constructor(private settingsService: SettingsService) {}
+  constructor(
+    private settingsService: SettingsService,
+    private siteConfigService: SiteConfigService
+  ) {}
 
   ngOnInit(): void {
     this.loadSettings();
@@ -162,6 +166,10 @@ export class SettingsComponent implements OnInit {
         this.logoPreview = res.siteLogo ? `${this.backendUrl}${res.siteLogo}` : null;
         this.faviconPreview = res.siteFavicon ? `${this.backendUrl}${res.siteFavicon}` : null;
         this.siteImagePreview = res.siteImage ? `${this.backendUrl}${res.siteImage}` : null;
+        
+        // Update site configuration in shared service
+        this.siteConfigService.updateSiteConfig(res);
+        
         this.submitting.set(false);
         this.successMessage.set('Settings saved successfully.');
         setTimeout(() => this.successMessage.set(''), 3000);
