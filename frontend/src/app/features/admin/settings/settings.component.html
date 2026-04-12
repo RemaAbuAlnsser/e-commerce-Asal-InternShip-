@@ -1,0 +1,260 @@
+<div class="page-container">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h1>Settings</h1>
+        <p>Manage your site configuration, contact info, social links, and banners.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alert alert-success" *ngIf="successMessage()">{{ successMessage() }}</div>
+  <div class="alert alert-error"   *ngIf="errorMessage()">{{ errorMessage() }}</div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="loading()">
+    <div class="spinner"></div>
+    <p>Loading settings…</p>
+  </div>
+
+  <ng-container *ngIf="!loading()">
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn" [class.active]="activeTab() === 'general'"  (click)="setTab('general')">
+        <span>🏠</span> General
+      </button>
+      <button class="tab-btn" [class.active]="activeTab() === 'contact'"  (click)="setTab('contact')">
+        <span>📞</span> Contact
+      </button>
+      <button class="tab-btn" [class.active]="activeTab() === 'social'"   (click)="setTab('social')">
+        <span>🔗</span> Social
+      </button>
+      <button class="tab-btn" [class.active]="activeTab() === 'images'"   (click)="setTab('images')">
+        <span>🖼️</span> Site Images
+      </button>
+    </div>
+
+    <!-- ═══════════════ GENERAL TAB ═══════════════ -->
+    <div class="tab-panel" *ngIf="activeTab() === 'general'">
+      <div class="card">
+        <div class="card-title">Site Identity</div>
+
+        <!-- Logo -->
+        <div class="form-group">
+          <label>Site Logo</label>
+          <div class="image-upload-row">
+            <div class="image-preview" [class.empty]="!logoPreview">
+              <img *ngIf="logoPreview" [src]="logoPreview" alt="Logo preview">
+              <span *ngIf="!logoPreview">No logo</span>
+            </div>
+            <div class="upload-actions">
+              <label class="btn-upload" for="logoInput">Choose file</label>
+              <input id="logoInput" type="file" accept="image/*" (change)="onLogoChange($event)" hidden>
+              <button *ngIf="logoFile" class="btn-clear" (click)="clearLogo()">✕ Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Favicon -->
+        <div class="form-group">
+          <label>Favicon</label>
+          <div class="image-upload-row">
+            <div class="image-preview favicon" [class.empty]="!faviconPreview">
+              <img *ngIf="faviconPreview" [src]="faviconPreview" alt="Favicon preview">
+              <span *ngIf="!faviconPreview">No favicon</span>
+            </div>
+            <div class="upload-actions">
+              <label class="btn-upload" for="faviconInput">Choose file</label>
+              <input id="faviconInput" type="file" accept="image/*" (change)="onFaviconChange($event)" hidden>
+              <button *ngIf="faviconFile" class="btn-clear" (click)="clearFavicon()">✕ Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cover Image -->
+        <div class="form-group">
+          <label>Default Cover Image</label>
+          <div class="image-upload-row">
+            <div class="image-preview wide" [class.empty]="!siteImagePreview">
+              <img *ngIf="siteImagePreview" [src]="siteImagePreview" alt="Cover preview">
+              <span *ngIf="!siteImagePreview">No image</span>
+            </div>
+            <div class="upload-actions">
+              <label class="btn-upload" for="siteImageInput">Choose file</label>
+              <input id="siteImageInput" type="file" accept="image/*" (change)="onSiteImageChange($event)" hidden>
+              <button *ngIf="siteImageFile" class="btn-clear" (click)="clearSiteImage()">✕ Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Site Name -->
+        <div class="form-group">
+          <label for="siteName">Site Name</label>
+          <input id="siteName" type="text" [(ngModel)]="form.siteName" placeholder="My Store">
+        </div>
+
+        <!-- Site Description -->
+        <div class="form-group">
+          <label for="siteDesc">Site Description</label>
+          <textarea id="siteDesc" rows="3" [(ngModel)]="form.siteDescription" placeholder="Short description of your store…"></textarea>
+        </div>
+
+        <div class="form-footer">
+          <button class="btn-primary" (click)="saveSettings()" [disabled]="submitting()">
+            <span *ngIf="submitting()" class="btn-spinner"></span>
+            {{ submitting() ? 'Saving…' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ CONTACT TAB ═══════════════ -->
+    <div class="tab-panel" *ngIf="activeTab() === 'contact'">
+      <div class="card">
+        <div class="card-title">Contact Information</div>
+
+        <div class="form-group">
+          <label for="email">Contact Email</label>
+          <input id="email" type="email" [(ngModel)]="form.contactEmail" placeholder="contact@example.com">
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Contact Phone</label>
+          <input id="phone" type="text" [(ngModel)]="form.contactPhone" placeholder="+1 555 000 0000">
+        </div>
+
+        <div class="form-group">
+          <label for="address">Address</label>
+          <textarea id="address" rows="3" [(ngModel)]="form.address" placeholder="123 Main St, City, Country"></textarea>
+        </div>
+
+        <div class="form-footer">
+          <button class="btn-primary" (click)="saveSettings()" [disabled]="submitting()">
+            <span *ngIf="submitting()" class="btn-spinner"></span>
+            {{ submitting() ? 'Saving…' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SOCIAL TAB ═══════════════ -->
+    <div class="tab-panel" *ngIf="activeTab() === 'social'">
+      <div class="card">
+        <div class="card-title">Social Media Links</div>
+
+        <div class="form-group">
+          <label for="facebook">Facebook URL</label>
+          <div class="input-with-icon">
+            <span class="input-icon">f</span>
+            <input id="facebook" type="url" [(ngModel)]="form.facebookUrl" placeholder="https://facebook.com/yourpage">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="instagram">Instagram URL</label>
+          <div class="input-with-icon">
+            <span class="input-icon">📷</span>
+            <input id="instagram" type="url" [(ngModel)]="form.instagramUrl" placeholder="https://instagram.com/yourpage">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="whatsapp">WhatsApp URL</label>
+          <div class="input-with-icon">
+            <span class="input-icon">💬</span>
+            <input id="whatsapp" type="url" [(ngModel)]="form.whatsappUrl" placeholder="https://wa.me/1234567890">
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <button class="btn-primary" (click)="saveSettings()" [disabled]="submitting()">
+            <span *ngIf="submitting()" class="btn-spinner"></span>
+            {{ submitting() ? 'Saving…' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SITE IMAGES TAB ═══════════════ -->
+    <div class="tab-panel" *ngIf="activeTab() === 'images'">
+
+      <!-- Upload new image card -->
+      <div class="card">
+        <div class="card-title">Upload New Banner</div>
+        <div class="upload-banner-row">
+          <div class="banner-preview" [class.empty]="!newSiteImagePreview">
+            <img *ngIf="newSiteImagePreview" [src]="newSiteImagePreview" alt="Preview">
+            <span *ngIf="!newSiteImagePreview">No image selected</span>
+          </div>
+          <div class="upload-banner-controls">
+            <label class="btn-upload" for="newBannerInput">Choose Image</label>
+            <input id="newBannerInput" type="file" accept="image/*" (change)="onNewSiteImageChange($event)" hidden>
+            <div class="form-group inline">
+              <label>Display Order</label>
+              <input type="number" min="0" [(ngModel)]="newSiteImageOrder" style="width:80px;">
+            </div>
+            <button class="btn-primary" (click)="uploadSiteImage()"
+                    [disabled]="!newSiteImageFile || siteImageUploading()">
+              <span *ngIf="siteImageUploading()" class="btn-spinner"></span>
+              {{ siteImageUploading() ? 'Uploading…' : 'Upload' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Existing images -->
+      <div class="card">
+        <div class="card-title">Banner Images ({{ siteImages().length }})</div>
+
+        <div class="loading-state" *ngIf="siteImagesLoading()">
+          <div class="spinner"></div>
+        </div>
+
+        <div class="empty-state" *ngIf="!siteImagesLoading() && siteImages().length === 0">
+          <span>🖼️</span>
+          <p>No banner images yet. Upload one above.</p>
+        </div>
+
+        <div class="images-grid" *ngIf="!siteImagesLoading() && siteImages().length > 0">
+          <div class="image-card" *ngFor="let img of siteImages(); trackBy: trackBySiteImageId">
+            <div class="image-card-thumb">
+              <img [src]="backendUrl + img.imageUrl" alt="Site banner">
+            </div>
+            <div class="image-card-footer">
+              <div class="order-control">
+                <label>Order</label>
+                <input type="number" min="0" [value]="img.displayOrder"
+                       (change)="updateOrder(img, $event)">
+              </div>
+              <button class="btn-delete" (click)="openDeleteSiteImageModal(img)" title="Delete">
+                🗑️
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="deleteModalOpen" (click)="closeDeleteModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Delete Image</h2>
+      <button class="modal-close" (click)="closeDeleteModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this banner image? This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeDeleteModal()">Cancel</button>
+      <button class="btn-danger" (click)="confirmDeleteSiteImage()">Delete</button>
+    </div>
+  </div>
+</div>

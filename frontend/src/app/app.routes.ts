@@ -40,6 +40,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/subscribers/subscribers.component').then(m => m.SubscribersComponent)
       },
       {
+        path: 'settings',
+        loadComponent: () => import('./features/admin/settings/settings.component').then(m => m.SettingsComponent)
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'

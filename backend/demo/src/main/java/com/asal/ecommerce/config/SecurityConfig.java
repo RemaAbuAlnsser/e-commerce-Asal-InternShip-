@@ -53,6 +53,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/brands/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/delivery-cities/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/settings/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/site-images/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
+                 // Allow order creation without authentication
+                 .requestMatchers(HttpMethod.GET,"/api/orders/**").permitAll()
+
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
@@ -68,7 +75,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);

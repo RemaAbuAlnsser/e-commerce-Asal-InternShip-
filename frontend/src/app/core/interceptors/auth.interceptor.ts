@@ -11,7 +11,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   
   if (typeof window !== 'undefined' && window.localStorage) {
     const token = localStorage.getItem('adminToken');
-    if (token && req.url.includes('/admin/')) {
+    if (token && (req.url.includes('/admin/') || req.url.includes('/api/orders'))) {
       authReq = req.clone({
         setHeaders: {
           Authorization: `Bearer ${token}`

@@ -1,12 +1,12 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import { RouterOutlet, Router, NavigationEnd, RouterLink } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, RouterOutlet,RouterLink],
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.css'
 })
@@ -58,6 +58,12 @@ export class AdminLayoutComponent implements OnInit {
       icon: 'people',
       route: '/admin/subscribers',
       active: false
+    },
+    {
+      label: 'Settings',
+      icon: 'settings',
+      route: '/admin/settings',
+      active: false
     }
   ];
 
@@ -73,7 +79,7 @@ export class AdminLayoutComponent implements OnInit {
     // Set initial sidebar state
     this.isSidebarOpen = !this.isMobile;
     this.updateActiveRoute();
-    
+
     // Listen for route changes
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
@@ -157,6 +163,7 @@ export class AdminLayoutComponent implements OnInit {
     if (route.includes('/orders')) return 'Orders';
     if (route.includes('/delivery')) return 'Delivery';
     if (route.includes('/subscribers')) return 'Subscribers';
+    if (route.includes('/settings')) return 'Settings';
     return 'Dashboard';
   }
 }

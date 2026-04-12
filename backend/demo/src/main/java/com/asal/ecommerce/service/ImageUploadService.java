@@ -38,6 +38,14 @@ public class ImageUploadService {
         return uploadImage(file, "products/colors");
     }
 
+    public String uploadSettingsImage(MultipartFile file) throws IOException {
+        return uploadImage(file, "settings");
+    }
+
+    public String uploadSiteImage(MultipartFile file) throws IOException {
+        return uploadImage(file, "site-images");
+    }
+
     // ── shared private logic ──────────────────────────────────────────────────
     private String uploadImage(MultipartFile file, String category) throws IOException {
         if (file == null || file.isEmpty()) {
