@@ -352,7 +352,9 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Category <span class="required">*</span></label>
-                <select class="form-control form-select" [(ngModel)]="form.categoryId">
+                <select class="form-control form-select"
+                        [ngModel]="form.categoryId"
+                        (ngModelChange)="onCategoryChange($event)">
                   <option [ngValue]="null">— select —</option>
                   @for (cat of categories(); track cat.id) {
                     <option [ngValue]="cat.id">{{ cat.name }}</option>

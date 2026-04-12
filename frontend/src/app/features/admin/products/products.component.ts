@@ -65,9 +65,12 @@ export class ProductsComponent implements OnInit {
   // ── Form ───────────────────────────────────────────────────────────────────
   form: ProductForm = this.emptyForm();
 
+  // Tracks the selected category as a signal so computed() re-runs reactively
+  selectedCategoryId = signal<number | null>(null);
+
   filteredSubcategories = computed(() =>
     this.subcategories().filter(s =>
-      !this.form.categoryId || s.categoryId === this.form.categoryId
+      !this.selectedCategoryId() || s.categoryId === this.selectedCategoryId()
     )
   );
 
@@ -130,6 +133,7 @@ export class ProductsComponent implements OnInit {
   // ── Modal helpers ──────────────────────────────────────────────────────────
   openCreate(): void {
     this.form = this.emptyForm();
+    this.selectedCategoryId.set(null);
     this.modalMode.set('create');
     this.showModal.set(true);
   }
@@ -159,8 +163,15 @@ export class ProductsComponent implements OnInit {
         subImagePreviews: c.images.map(i => this.productService.resolveImageUrl(i.imageUrl))
       }))
     };
+    this.selectedCategoryId.set(product.categoryId);
     this.modalMode.set('edit');
     this.showModal.set(true);
+  }
+
+  onCategoryChange(catId: number | null): void {
+    this.form.categoryId = catId;
+    this.form.subcategoryId = null;   // reset subcategory when category changes
+    this.selectedCategoryId.set(catId);
   }
 
   openView(product: ProductResponse): void {

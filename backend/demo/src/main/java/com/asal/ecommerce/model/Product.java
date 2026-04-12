@@ -62,6 +62,10 @@ public class Product {
     @Builder.Default
     private List<ProductColor> colors = new ArrayList<>();
 
+    @Builder.Default
+    @Column(name = "stock", nullable = false)
+    private int stock = 0;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -79,8 +83,8 @@ public class Product {
         updatedAt = LocalDateTime.now();
     }
 
-    // helper — total stock is always computed
+    // Returns the persisted stock value (sum of all color stocks)
     public int getTotalStock() {
-        return colors.stream().mapToInt(ProductColor::getStock).sum();
+        return stock;
     }
 }

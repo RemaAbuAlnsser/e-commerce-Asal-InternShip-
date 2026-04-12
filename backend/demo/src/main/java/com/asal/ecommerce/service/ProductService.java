@@ -115,6 +115,9 @@ public class ProductService {
             }
         }
 
+        // Sync total stock from color list
+        product.setStock(product.getColors().stream().mapToInt(ProductColor::getStock).sum());
+
         return mapToResponse(productRepo.save(product));
     }
 
@@ -216,6 +219,8 @@ public class ProductService {
         }
 
         product.getColors().add(color);
+        // Sync total stock
+        product.setStock(product.getColors().stream().mapToInt(ProductColor::getStock).sum());
         return mapToResponse(productRepo.save(product));
     }
 
@@ -234,6 +239,11 @@ public class ProductService {
 
         color.setStock(newStock);
         colorRepo.save(color);
+
+        // Sync total stock using DB sum (ensures consistency after flush)
+        int total = colorRepo.sumStockByProductId(productId);
+        product.setStock(total);
+        productRepo.save(product);
 
         return mapToResponse(productRepo.findById(productId).orElseThrow());
     }
@@ -254,6 +264,10 @@ public class ProductService {
         color.getImages().forEach(img -> imageUploadService.deleteImage(img.getImageUrl()));
         product.getColors().remove(color);
         colorRepo.delete(color);
+
+        // Sync total stock from remaining in-memory colors
+        product.setStock(product.getColors().stream().mapToInt(ProductColor::getStock).sum());
+        productRepo.save(product);
 
         return mapToResponse(productRepo.findById(productId).orElseThrow());
     }
