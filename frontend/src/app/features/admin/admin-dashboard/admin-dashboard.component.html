@@ -1,141 +1,205 @@
 <div class="dashboard-container">
-  
-  
-  <!-- Basic Stats Section -->
-  <div class="stats-section">
-    <h2 class="section-title">Overview Statistics</h2>
-    <div class="stats-grid">
-      <div class="stat-card" *ngFor="let stat of basicStats">
-        <div class="stat-icon" [style.background-color]="stat.color + '20'" [style.color]="stat.color">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Box Icon -->
-            <g *ngIf="stat.icon === 'box'">
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="loading()">
+    <div class="spinner"></div>
+    <p>Loading statistics…</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-state" *ngIf="error()">
+    <p>{{ error() }}</p>
+  </div>
+
+  <ng-container *ngIf="!loading() && !error() && stats() as s">
+
+    <!-- ── Overview Stats ─────────────────────────────────────── -->
+    <div class="stats-section">
+      <h2 class="section-title">Overview Statistics</h2>
+      <div class="stats-grid">
+
+        <!-- Total Products -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color:#3b82f620;color:#3b82f6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M21 16V8A2 2 0 0 0 19 6H5A2 2 0 0 0 3 8V16A2 2 0 0 0 5 18H19A2 2 0 0 0 21 16Z" stroke="currentColor" stroke-width="2"/>
               <polyline points="7,6 7,4 17,4 17,6" stroke="currentColor" stroke-width="2"/>
-            </g>
-            <!-- Layers Icon -->
-            <g *ngIf="stat.icon === 'layers'">
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-title">Total Products</h3>
+            <div class="stat-value">{{ s.totalProducts }}</div>
+          </div>
+        </div>
+
+        <!-- Total Categories -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color:#10b98120;color:#10b981">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2"/>
               <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2"/>
               <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2"/>
-            </g>
-            <!-- Tag Icon -->
-            <g *ngIf="stat.icon === 'tag'">
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-title">Total Categories</h3>
+            <div class="stat-value">{{ s.totalCategories }}</div>
+          </div>
+        </div>
+
+        <!-- Total Brands -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color:#f59e0b20;color:#f59e0b">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M20.59 13.41L13.42 20.58A2 2 0 0 1 12 21A2 2 0 0 1 10.59 20.59L3.41 13.41A2 2 0 0 1 3 12V4A2 2 0 0 1 5 2H13A2 2 0 0 1 14.41 2.59L20.59 8.77A2 2 0 0 1 20.59 13.41Z" stroke="currentColor" stroke-width="2"/>
               <circle cx="7.5" cy="7.5" r="1.5" fill="currentColor"/>
-            </g>
-            <!-- Shopping Cart Icon -->
-            <g *ngIf="stat.icon === 'shopping-cart'">
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-title">Total Brands</h3>
+            <div class="stat-value">{{ s.totalBrands }}</div>
+          </div>
+        </div>
+
+        <!-- Total Orders -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color:#ef444420;color:#ef4444">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <circle cx="8" cy="21" r="1" stroke="currentColor" stroke-width="2"/>
               <circle cx="19" cy="21" r="1" stroke="currentColor" stroke-width="2"/>
               <path d="M2.05 2.05H4L6.2 12.05A2 2 0 0 0 8.17 14H19.05A2 2 0 0 0 21 12.05L22.05 5.05H5.12" stroke="currentColor" stroke-width="2"/>
-            </g>
-            <!-- Users Icon -->
-            <g *ngIf="stat.icon === 'users'">
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-title">Total Orders</h3>
+            <div class="stat-value">{{ s.totalOrders }}</div>
+            <div class="stat-badge pending">{{ s.pendingOrders }} pending</div>
+          </div>
+        </div>
+
+        <!-- Total Users -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color:#8b5cf620;color:#8b5cf6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M17 21V19A4 4 0 0 0 13 15H5A4 4 0 0 0 1 19V21" stroke="currentColor" stroke-width="2"/>
               <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
               <path d="M23 21V19A4 4 0 0 0 19 15.3" stroke="currentColor" stroke-width="2"/>
               <path d="M16 3.13A4 4 0 0 1 16 11.87" stroke="currentColor" stroke-width="2"/>
-            </g>
-            <!-- Mail Icon -->
-            <g *ngIf="stat.icon === 'mail'">
-              <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2"/>
-              <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2"/>
-            </g>
-          </svg>
-        </div>
-        <div class="stat-content">
-          <h3 class="stat-title">{{ stat.title }}</h3>
-          <div class="stat-value">{{ stat.value }}</div>
-          <div class="stat-change" [class.positive]="stat.changeType === 'positive'" [class.negative]="stat.changeType === 'negative'">
-            {{ stat.change }}
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-title">Total Users</h3>
+            <div class="stat-value">{{ s.totalUsers }}</div>
           </div>
         </div>
+
       </div>
     </div>
-  </div>
 
-  <!-- Financial Stats Section -->
-  <div class="stats-section">
-    <h2 class="section-title">Financial Overview</h2>
-    <div class="financial-grid">
-      <div class="stat-card financial-card" *ngFor="let stat of financialStats">
-        <div class="stat-icon" [style.background-color]="stat.color + '20'" [style.color]="stat.color">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Dollar Sign Icon -->
-            <g *ngIf="stat.icon === 'dollar-sign'">
+    <!-- ── Revenue Stats ───────────────────────────────────────── -->
+    <div class="stats-section">
+      <h2 class="section-title">Revenue Overview</h2>
+      <div class="financial-grid">
+
+        <!-- Total Revenue -->
+        <div class="stat-card financial-card">
+          <div class="stat-icon" style="background-color:#10b98120;color:#10b981">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" stroke-width="2"/>
               <path d="M17 5H9.5A3.5 3.5 0 0 0 9.5 12H14.5A3.5 3.5 0 0 1 14.5 19H6" stroke="currentColor" stroke-width="2"/>
-            </g>
-            <!-- Trending Up Icon -->
-            <g *ngIf="stat.icon === 'trending-up'">
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-title">Total Revenue</h3>
+            <div class="stat-value financial-value">{{ formatCurrency(s.totalRevenue) }}</div>
+          </div>
+        </div>
+
+        <!-- Today Revenue -->
+        <div class="stat-card financial-card">
+          <div class="stat-icon" style="background-color:#3b82f620;color:#3b82f6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <polyline points="23,6 13.5,15.5 8.5,10.5 1,18" stroke="currentColor" stroke-width="2"/>
               <polyline points="17,6 23,6 23,12" stroke="currentColor" stroke-width="2"/>
-            </g>
-            <!-- Calendar Icon -->
-            <g *ngIf="stat.icon === 'calendar'">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-title">Today's Revenue</h3>
+            <div class="stat-value financial-value">{{ formatCurrency(s.todayRevenue) }}</div>
+          </div>
+        </div>
+
+        <!-- Weekly Revenue -->
+        <div class="stat-card financial-card">
+          <div class="stat-icon" style="background-color:#f59e0b20;color:#f59e0b">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
               <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
               <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
               <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
-            </g>
-            <!-- Bar Chart Icon -->
-            <g *ngIf="stat.icon === 'bar-chart'">
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-title">Weekly Revenue</h3>
+            <div class="stat-value financial-value">{{ formatCurrency(s.weeklyRevenue) }}</div>
+          </div>
+        </div>
+
+        <!-- Monthly Revenue -->
+        <div class="stat-card financial-card">
+          <div class="stat-icon" style="background-color:#8b5cf620;color:#8b5cf6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <line x1="12" y1="20" x2="12" y2="10" stroke="currentColor" stroke-width="2"/>
               <line x1="18" y1="20" x2="18" y2="4" stroke="currentColor" stroke-width="2"/>
               <line x1="6" y1="20" x2="6" y2="16" stroke="currentColor" stroke-width="2"/>
-            </g>
-          </svg>
-        </div>
-        <div class="stat-content">
-          <h3 class="stat-title">{{ stat.title }}</h3>
-          <div class="stat-value financial-value">{{ stat.value }}</div>
-          <div class="stat-change" [class.positive]="stat.changeType === 'positive'" [class.negative]="stat.changeType === 'negative'">
-            {{ stat.change }}
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-title">Monthly Revenue</h3>
+            <div class="stat-value financial-value">{{ formatCurrency(s.monthlyRevenue) }}</div>
           </div>
         </div>
+
       </div>
     </div>
-  </div>
 
-  <!-- Notifications Section -->
-  <div class="notifications-section">
-    <h2 class="section-title">Recent Notifications & Alerts</h2>
-    <div class="notifications-container">
-      <div class="notification-card" *ngFor="let notification of notifications" [class]="'notification-' + notification.type">
-        <div class="notification-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Alert Triangle Icon -->
-            <g *ngIf="getNotificationIcon(notification.type) === 'alert-triangle'">
+    <!-- ── Notifications ──────────────────────────────────────── -->
+    <div class="stats-section" id="notifications">
+      <h2 class="section-title">Notifications & Alerts</h2>
+      <div class="notifications-list">
+
+        <!-- Pending orders -->
+        <div class="notif-card warning" *ngIf="s.pendingOrders > 0">
+          <div class="notif-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M10.29 3.86L1.82 18A2 2 0 0 0 3.54 21H20.46A2 2 0 0 0 22.18 18L13.71 3.86A2 2 0 0 0 10.29 3.86Z" stroke="currentColor" stroke-width="2"/>
               <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2"/>
               <circle cx="12" cy="17" r="1" fill="currentColor"/>
-            </g>
-            <!-- Alert Circle Icon -->
-            <g *ngIf="getNotificationIcon(notification.type) === 'alert-circle'">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-              <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2"/>
-              <circle cx="12" cy="16" r="1" fill="currentColor"/>
-            </g>
-            <!-- Info Icon -->
-            <g *ngIf="getNotificationIcon(notification.type) === 'info'">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-              <line x1="12" y1="16" x2="12" y2="12" stroke="currentColor" stroke-width="2"/>
-              <circle cx="12" cy="8" r="1" fill="currentColor"/>
-            </g>
-            <!-- Check Circle Icon -->
-            <g *ngIf="getNotificationIcon(notification.type) === 'check-circle'">
+            </svg>
+          </div>
+          <div class="notif-body">
+            <span class="notif-title">Pending Orders</span>
+            <span class="notif-msg">You have <strong>{{ s.pendingOrders }}</strong> order{{ s.pendingOrders === 1 ? '' : 's' }} waiting to be processed.</span>
+          </div>
+          <a class="notif-action" routerLink="/admin/orders">View Orders</a>
+        </div>
+
+        <!-- All caught up -->
+        <div class="notif-card success" *ngIf="s.pendingOrders === 0">
+          <div class="notif-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M22 11.08V12A10 10 0 1 1 5.93 7.01" stroke="currentColor" stroke-width="2"/>
               <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2"/>
-            </g>
-          </svg>
+            </svg>
+          </div>
+          <div class="notif-body">
+            <span class="notif-title">All caught up!</span>
+            <span class="notif-msg">No pending orders at the moment.</span>
+          </div>
         </div>
-        <div class="notification-content">
-          <h4 class="notification-title">{{ notification.title }}</h4>
-          <p class="notification-message">{{ notification.message }}</p>
-          <span class="notification-time">{{ notification.time }}</span>
-        </div>
+
       </div>
     </div>
-  </div>
+
+  </ng-container>
 </div>

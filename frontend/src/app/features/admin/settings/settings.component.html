@@ -25,16 +25,16 @@
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab-btn" [class.active]="activeTab() === 'general'"  (click)="setTab('general')">
-        <span>🏠</span> General
+         General
       </button>
       <button class="tab-btn" [class.active]="activeTab() === 'contact'"  (click)="setTab('contact')">
-        <span>📞</span> Contact
+         Contact
       </button>
       <button class="tab-btn" [class.active]="activeTab() === 'social'"   (click)="setTab('social')">
-        <span>🔗</span> Social
+         Social
       </button>
       <button class="tab-btn" [class.active]="activeTab() === 'images'"   (click)="setTab('images')">
-        <span>🖼️</span> Site Images
+        Site Images
       </button>
     </div>
 
@@ -157,7 +157,7 @@
         <div class="form-group">
           <label for="instagram">Instagram URL</label>
           <div class="input-with-icon">
-            <span class="input-icon">📷</span>
+            <span class="input-icon">I</span>
             <input id="instagram" type="url" [(ngModel)]="form.instagramUrl" placeholder="https://instagram.com/yourpage">
           </div>
         </div>
@@ -165,7 +165,7 @@
         <div class="form-group">
           <label for="whatsapp">WhatsApp URL</label>
           <div class="input-with-icon">
-            <span class="input-icon">💬</span>
+            <span class="input-icon">W</span>
             <input id="whatsapp" type="url" [(ngModel)]="form.whatsappUrl" placeholder="https://wa.me/1234567890">
           </div>
         </div>

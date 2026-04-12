@@ -131,21 +131,87 @@
 
       <div class="topbar-right">
         <div class="topbar-actions">
-          <button class="action-btn" title="Notifications">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9Z"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    <path d="M10 21a2 2 0 0 0 4 0"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </svg>
-</button>
+
+          <!-- Notification Bell -->
+          <div class="notif-wrapper">
+            <button class="action-btn notification-btn" title="Notifications" (click)="toggleNotifDropdown($event)">
+              <svg class="bell-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9Z"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M10 21a2 2 0 0 0 4 0"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="notif-dot" *ngIf="unreadCount > 0"></span>
+            </button>
+
+            <!-- Dropdown -->
+            <div class="notif-dropdown" [class.open]="isNotifOpen" (click)="$event.stopPropagation()">
+              <div class="notif-header">
+                <span class="notif-title">Notifications</span>
+                <span class="notif-count" *ngIf="unreadCount > 0">{{ unreadCount }} new</span>
+              </div>
+
+              <div class="notif-list" *ngIf="notifications.length > 0; else emptyNotif">
+                <div
+                  class="notif-item"
+                  *ngFor="let n of notifications"
+                  [class.unread]="!n.isRead"
+                  (click)="onNotifClick(n)"
+                >
+                  <div class="notif-icon-wrap" [ngClass]="notifIconClass(n.type)">
+                    <!-- NEW_ORDER -->
+                    <svg *ngIf="n.type === 'NEW_ORDER'" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <circle cx="8" cy="21" r="1" stroke="currentColor" stroke-width="2"/>
+                      <circle cx="19" cy="21" r="1" stroke="currentColor" stroke-width="2"/>
+                      <path d="M2.05 2.05H4L6.2 12.05A2 2 0 0 0 8.17 14H19.05A2 2 0 0 0 21 12.05L22.05 5.05H5.12" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <!-- LOW_STOCK -->
+                    <svg *ngIf="n.type === 'LOW_STOCK'" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2"/>
+                      <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <!-- OUT_OF_STOCK -->
+                    <svg *ngIf="n.type === 'OUT_OF_STOCK'" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                      <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
+                      <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                  </div>
+                  <div class="notif-body">
+                    <div class="notif-item-title">{{ n.title }}</div>
+                    <div class="notif-item-msg">{{ n.message }}</div>
+                    <div class="notif-item-time">{{ notifService.formatTime(n.createdAt) }}</div>
+                  </div>
+                  <span class="unread-dot" *ngIf="!n.isRead"></span>
+                </div>
+              </div>
+
+              <ng-template #emptyNotif>
+                <div class="notif-empty">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9Z" stroke="#cbd5e1" stroke-width="2"/>
+                    <path d="M10 21a2 2 0 0 0 4 0" stroke="#cbd5e1" stroke-width="2"/>
+                  </svg>
+                  <p>No notifications</p>
+                </div>
+              </ng-template>
+
+              <div class="notif-footer">
+                <button class="view-all-btn" (click)="navigateTo('/admin/orders'); isNotifOpen = false">
+                  View All
+                </button>
+              </div>
+            </div>
+          </div>
 
           <a class="action-btn" title="Settings" [routerLink]="['/admin/settings']">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <path d="M12 8.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 0 0 0-7Z" stroke="currentColor" stroke-width="2"/>
-    <path d="M19.4 12a7.4 7.4 0 0 0 .05-.88a7.4 7.4 0 0 0-.05-.88l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.28 7.28 0 0 0-1.52-.88l-.38-2.65a.5.5 0 0 0-.5-.42h-4a.5.5 0 0 0-.5.42l-.38 2.65c-.54.22-1.05.52-1.52.88l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64L4.6 10.24c-.03.29-.05.58-.05.88s.02.59.05.88l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1c.47.36.98.66 1.52.88l.38 2.65a.5.5 0 0 0 .5.42h4a.5.5 0 0 0 .5-.42l.38-2.65c.54-.22 1.05-.52 1.52-.88l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64L19.4 12Z" stroke="currentColor" stroke-width="2"/>
-  </svg>
-</a>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 8.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 0 0 0-7Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M19.4 12a7.4 7.4 0 0 0 .05-.88a7.4 7.4 0 0 0-.05-.88l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.28 7.28 0 0 0-1.52-.88l-.38-2.65a.5.5 0 0 0-.5-.42h-4a.5.5 0 0 0-.5.42l-.38 2.65c-.54.22-1.05.52-1.52.88l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64L4.6 10.24c-.03.29-.05.58-.05.88s.02.59.05.88l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1c.47.36.98.66 1.52.88l.38 2.65a.5.5 0 0 0 .5.42h4a.5.5 0 0 0 .5-.42l.38-2.65c.54-.22 1.05-.52 1.52-.88l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64L19.4 12Z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </a>
+
         </div>
       </div>
     </header>

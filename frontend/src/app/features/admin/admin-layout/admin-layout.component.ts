@@ -1,74 +1,45 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, signal, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd, RouterLink } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { filter, Subscription } from 'rxjs';
+import { DashboardService } from '../../../services/dashboard.service';
+import { NotificationService } from '../../../services/notification.service';
+import { Notification } from '../../../models/notification.model';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet,RouterLink],
+  imports: [CommonModule, RouterOutlet, RouterLink],
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.css'
 })
-export class AdminLayoutComponent implements OnInit {
+export class AdminLayoutComponent implements OnInit, OnDestroy {
   isSidebarOpen = false;
   isMobile = false;
   currentRoute = '';
+  isNotifOpen = false;
+  notifications: Notification[] = [];
+  unreadCount = 0;
   private isBrowser: boolean;
+  private notifSub!: Subscription;
+
+  pendingOrders = signal(0);
 
   menuItems = [
-    {
-      label: 'Dashboard',
-      icon: 'dashboard',
-      route: '/admin/dashboard',
-      active: false
-    },
-    {
-      label: 'Categories',
-      icon: 'category',
-      route: '/admin/categories',
-      active: false
-    },
-    {
-      label: 'Brands',
-      icon: 'brand',
-      route: '/admin/brands',
-      active: false
-    },
-    {
-      label: 'Products',
-      icon: 'inventory',
-      route: '/admin/products',
-      active: false
-    },
-    {
-      label: 'Orders',
-      icon: 'shopping_cart',
-      route: '/admin/orders',
-      active: false
-    },
-    {
-      label: 'Delivery',
-      icon: 'local_shipping',
-      route: '/admin/delivery',
-      active: false
-    },
-    {
-      label: 'Subscribers',
-      icon: 'people',
-      route: '/admin/subscribers',
-      active: false
-    },
-    {
-      label: 'Settings',
-      icon: 'settings',
-      route: '/admin/settings',
-      active: false
-    }
+    { label: 'Dashboard', icon: 'dashboard', route: '/admin/dashboard', active: false },
+    { label: 'Categories', icon: 'category', route: '/admin/categories', active: false },
+    { label: 'Brands', icon: 'brand', route: '/admin/brands', active: false },
+    { label: 'Products', icon: 'inventory', route: '/admin/products', active: false },
+    { label: 'Orders', icon: 'shopping_cart', route: '/admin/orders', active: false },
+    { label: 'Delivery', icon: 'local_shipping', route: '/admin/delivery', active: false },
+    { label: 'Subscribers', icon: 'people', route: '/admin/subscribers', active: false },
+    { label: 'Settings', icon: 'settings', route: '/admin/settings', active: false }
   ];
 
   constructor(
     private router: Router,
+    private dashboardService: DashboardService,
+    public notifService: NotificationService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -76,37 +47,64 @@ export class AdminLayoutComponent implements OnInit {
 
   ngOnInit() {
     this.checkScreenSize();
-    // Set initial sidebar state
     this.isSidebarOpen = !this.isMobile;
     this.updateActiveRoute();
+    this.loadPendingCount();
 
-    // Listen for route changes
+    this.notifSub = this.notifService.getNotifications().subscribe(list => {
+      this.notifications = list.slice(0, 5);
+      this.unreadCount = list.filter(n => !n.isRead).length;
+    });
+
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
         this.updateActiveRoute();
-        if (this.isMobile) {
-          this.isSidebarOpen = false;
-        }
+        if (this.isMobile) this.isSidebarOpen = false;
+        this.isNotifOpen = false;
       });
 
-    // Listen for window resize (only in browser)
     if (this.isBrowser) {
-      window.addEventListener('resize', () => {
-        this.checkScreenSize();
-      });
+      window.addEventListener('resize', () => this.checkScreenSize());
     }
+  }
+
+  ngOnDestroy() {
+    this.notifSub?.unsubscribe();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.notif-wrapper')) {
+      this.isNotifOpen = false;
+    }
+  }
+
+  toggleNotifDropdown(event: MouseEvent) {
+    event.stopPropagation();
+    this.isNotifOpen = !this.isNotifOpen;
+  }
+
+  onNotifClick(notif: Notification) {
+    this.notifService.markAsRead(notif.id);
+    this.isNotifOpen = false;
+    this.router.navigate([notif.route]);
   }
 
   checkScreenSize() {
     if (this.isBrowser) {
       this.isMobile = window.innerWidth < 768;
     } else {
-      // Default to desktop on server
       this.isMobile = false;
     }
-    // Don't automatically set sidebar state on desktop
-    // Let user control it via toggle button
+  }
+
+  private loadPendingCount(): void {
+    this.dashboardService.getStats().subscribe({
+      next: (data) => this.pendingOrders.set(data.pendingOrders),
+      error: () => {}
+    });
   }
 
   toggleSidebar() {
@@ -152,6 +150,10 @@ export class AdminLayoutComponent implements OnInit {
       }
     }
     return 'admin@example.com';
+  }
+
+  notifIconClass(type: string): string {
+    return 'type-' + type.toLowerCase().replace('_', '-');
   }
 
   getCurrentPageName(): string {
