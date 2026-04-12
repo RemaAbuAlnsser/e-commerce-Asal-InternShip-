@@ -1,6 +1,8 @@
 package com.asal.ecommerce.service;
 
 import com.asal.ecommerce.dto.DashboardStatsResponse;
+import com.asal.ecommerce.dto.NotificationResponse;
+import com.asal.ecommerce.model.Product;
 import com.asal.ecommerce.repository.BrandRepository;
 import com.asal.ecommerce.repository.CategoryRepository;
 import com.asal.ecommerce.repository.OrderRepository;
@@ -13,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.WeekFields;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -24,6 +28,38 @@ public class DashboardService {
     @Autowired private BrandRepository    brandRepository;
     @Autowired private OrderRepository    orderRepository;
     @Autowired private UserRepository     userRepository;
+
+    private static final int LOW_STOCK_THRESHOLD = 5;
+
+    public List<NotificationResponse> getNotifications() {
+        List<NotificationResponse> notifications = new ArrayList<>();
+
+        // Out of stock products
+        for (Product p : productRepository.findOutOfStockProducts()) {
+            notifications.add(NotificationResponse.builder()
+                    .id(p.getId())
+                    .type("OUT_OF_STOCK")
+                    .title("Out of Stock")
+                    .message(p.getName() + " is out of stock")
+                    .route("/admin/products")
+                    .createdAt(p.getUpdatedAt())
+                    .build());
+        }
+
+        // Low stock products (stock > 0 and <= threshold)
+        for (Product p : productRepository.findLowStockProducts(LOW_STOCK_THRESHOLD)) {
+            notifications.add(NotificationResponse.builder()
+                    .id(p.getId() + 100_000L)   // offset to avoid ID collision with out-of-stock
+                    .type("LOW_STOCK")
+                    .title("Low Stock Alert")
+                    .message(p.getName() + " — only " + p.getStock() + " unit" + (p.getStock() == 1 ? "" : "s") + " remaining")
+                    .route("/admin/products")
+                    .createdAt(p.getUpdatedAt())
+                    .build());
+        }
+
+        return notifications;
+    }
 
     public DashboardStatsResponse getStats() {
         LocalDateTime startOfToday   = LocalDate.now().atStartOfDay();

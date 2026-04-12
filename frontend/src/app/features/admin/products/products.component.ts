@@ -294,12 +294,11 @@ export class ProductsComponent implements OnInit {
       if (this.form.primeImageFile) fd.append('primeImage', this.form.primeImageFile);
       if (this.form.hoverImageFile) fd.append('hoverImage', this.form.hoverImageFile);
 
+      // First update the basic product fields
       this.productService.updateProduct(this.selectedProduct()!.id, fd).subscribe({
         next: updated => {
-          this.products.update(list => list.map(p => p.id === updated.id ? updated : p));
-          this.showSuccess('Product updated successfully');
-          this.closeModal();
-          this.saving.set(false);
+          // Then update stock for each color that has changed
+          this.updateColorStocks(updated);
         },
         error: err => {
           this.error.set(err.error?.message ?? 'Failed to update product');
@@ -325,6 +324,66 @@ export class ProductsComponent implements OnInit {
       error: err => {
         this.error.set('Failed to delete product');
         this.deleting.set(false);
+      }
+    });
+  }
+
+  // ── Update color stocks after product edit ────────────────────────────────
+  private updateColorStocks(updatedProduct: ProductResponse): void {
+    const originalProduct = this.selectedProduct()!;
+    const stockUpdates: Array<{colorId: number, newStock: number}> = [];
+
+    // Compare form colors with original product colors to find stock changes
+    this.form.colors.forEach((formColor, index) => {
+      const originalColor = originalProduct.colors.find(c => 
+        c.colorName === formColor.colorName && c.colorHex === formColor.colorHex
+      );
+      
+      if (originalColor && originalColor.stock !== formColor.stock) {
+        stockUpdates.push({
+          colorId: originalColor.id,
+          newStock: formColor.stock
+        });
+      }
+    });
+
+    if (stockUpdates.length === 0) {
+      // No stock changes, just update the product list and close modal
+      this.products.update(list => list.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+      this.showSuccess('Product updated successfully');
+      this.closeModal();
+      this.saving.set(false);
+      return;
+    }
+
+    // Update stocks sequentially
+    this.updateStocksSequentially(updatedProduct.id, stockUpdates, 0, updatedProduct);
+  }
+
+  private updateStocksSequentially(
+    productId: number, 
+    stockUpdates: Array<{colorId: number, newStock: number}>,
+    index: number,
+    lastUpdatedProduct: ProductResponse
+  ): void {
+    if (index >= stockUpdates.length) {
+      // All stock updates completed
+      this.products.update(list => list.map(p => p.id === productId ? lastUpdatedProduct : p));
+      this.showSuccess('Product and stock updated successfully');
+      this.closeModal();
+      this.saving.set(false);
+      return;
+    }
+
+    const update = stockUpdates[index];
+    this.productService.updateColorStock(productId, update.colorId, update.newStock).subscribe({
+      next: updated => {
+        // Continue with next stock update
+        this.updateStocksSequentially(productId, stockUpdates, index + 1, updated);
+      },
+      error: err => {
+        this.error.set(`Failed to update stock for color: ${err.error?.message ?? 'Unknown error'}`);
+        this.saving.set(false);
       }
     });
   }

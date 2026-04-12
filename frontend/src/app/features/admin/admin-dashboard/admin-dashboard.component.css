@@ -354,6 +354,156 @@
   background: #dbeafe;
 }
 
+/* ── Notifications section header ── */
+.notif-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.notif-section-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.unread-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #3b82f6;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+}
+
+.mark-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #3b82f6;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.mark-all-btn:hover {
+  background: #dbeafe;
+}
+
+/* ── Stock notification cards ── */
+.notif-card.stock-notif {
+  align-items: flex-start;
+}
+
+/* Unread highlight */
+.notif-card.unread {
+  border-left-width: 4px;
+}
+
+.notif-card.type-out {
+  background: #fff5f5;
+  border-color: #fca5a5;
+}
+
+.notif-card.type-out .notif-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.notif-card.type-out.unread {
+  border-left-color: #ef4444;
+}
+
+.notif-card.type-low {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.notif-card.type-low .notif-icon {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.notif-card.type-low.unread {
+  border-left-color: #f59e0b;
+}
+
+/* Read state — muted */
+.notif-card.stock-notif:not(.unread) {
+  opacity: 0.65;
+}
+
+/* Title row with unread dot */
+.notif-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+
+.unread-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3b82f6;
+  flex-shrink: 0;
+}
+
+.notif-time {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+/* Actions column */
+.notif-actions-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.mark-read-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.mark-read-btn:hover {
+  background: #e2e8f0;
+  color: #374151;
+}
+
+.read-label {
+  font-size: 0.72rem;
+  color: #10b981;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+}
+
 /* Loading / Error states */
 .loading-state {
   display: flex;

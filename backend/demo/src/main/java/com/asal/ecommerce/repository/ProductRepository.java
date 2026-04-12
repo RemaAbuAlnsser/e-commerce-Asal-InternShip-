@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
@@ -44,4 +45,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
               OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
             """)
     Page<Product> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    // ── stock alerts ──────────────────────────────────────────────────────────
+    @Query("SELECT p FROM Product p WHERE p.stock = 0")
+    List<Product> findOutOfStockProducts();
+
+    @Query("SELECT p FROM Product p WHERE p.stock > 0 AND p.stock <= :threshold ORDER BY p.stock ASC")
+    List<Product> findLowStockProducts(@Param("threshold") int threshold);
 }

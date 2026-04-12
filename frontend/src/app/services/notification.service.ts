@@ -1,78 +1,58 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { Notification } from '../models/notification.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
-  private notifications: Notification[] = [
-    {
-      id: 1,
-      type: 'NEW_ORDER',
-      title: 'New Order Received',
-      message: 'Order #1042 placed by Ahmed Hassan — $129.99',
-      isRead: false,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      route: '/admin/orders'
-    },
-    {
-      id: 2,
-      type: 'LOW_STOCK',
-      title: 'Low Stock Alert',
-      message: 'Nike Air Max 270 — only 3 units remaining',
-      isRead: false,
-      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-      route: '/admin/products'
-    },
-    {
-      id: 3,
-      type: 'NEW_ORDER',
-      title: 'New Order Received',
-      message: 'Order #1041 placed by Sara Ali — $74.50',
-      isRead: false,
-      createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000),
-      route: '/admin/orders'
-    },
-    {
-      id: 4,
-      type: 'OUT_OF_STOCK',
-      title: 'Out of Stock',
-      message: 'Adidas Ultraboost 22 is now out of stock',
-      isRead: true,
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      route: '/admin/products'
-    },
-    {
-      id: 5,
-      type: 'LOW_STOCK',
-      title: 'Low Stock Alert',
-      message: 'Puma RS-X — only 2 units remaining',
-      isRead: true,
-      createdAt: new Date(Date.now() - 30 * 60 * 60 * 1000),
-      route: '/admin/products'
-    }
-  ];
+  private http = inject(HttpClient);
 
-  private _notifications$ = new BehaviorSubject<Notification[]>(this.notifications);
+  private _notifications$ = new BehaviorSubject<Notification[]>([]);
+  // Tracks which IDs have been read locally (not persisted to server)
+  private readIds = new Set<number>();
 
   getNotifications() {
     return this._notifications$.asObservable();
   }
 
+  /** Call this once when the admin layout loads */
+  loadNotifications(): void {
+    this.http.get<any[]>(`${environment.apiUrl}/admin/dashboard/notifications`).subscribe({
+      next: (data) => {
+        const mapped: Notification[] = data.map(n => ({
+          id:        n.id,
+          type:      n.type,
+          title:     n.title,
+          message:   n.message,
+          isRead:    this.readIds.has(n.id),
+          createdAt: new Date(n.createdAt),
+          route:     n.route
+        }));
+        this._notifications$.next(mapped);
+      },
+      error: () => {}
+    });
+  }
+
   getUnreadCount(): number {
-    return this.notifications.filter(n => !n.isRead).length;
+    return this._notifications$.getValue().filter(n => !n.isRead).length;
   }
 
   markAsRead(id: number): void {
-    const n = this.notifications.find(n => n.id === id);
-    if (n) {
-      n.isRead = true;
-      this._notifications$.next([...this.notifications]);
-    }
+    this.readIds.add(id);
+    const updated = this._notifications$.getValue().map(n =>
+      n.id === id ? { ...n, isRead: true } : n
+    );
+    this._notifications$.next(updated);
   }
 
   markAllAsRead(): void {
-    this.notifications.forEach(n => (n.isRead = true));
-    this._notifications$.next([...this.notifications]);
+    const updated = this._notifications$.getValue().map(n => {
+      this.readIds.add(n.id);
+      return { ...n, isRead: true };
+    });
+    this._notifications$.next(updated);
   }
 
   formatTime(date: Date): string {

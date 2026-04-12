@@ -198,7 +198,7 @@
               </ng-template>
 
               <div class="notif-footer">
-                <button class="view-all-btn" (click)="navigateTo('/admin/orders'); isNotifOpen = false">
+                <button class="view-all-btn" (click)="router.navigate(['/admin/dashboard'], { fragment: 'notifications' }); isNotifOpen = false">
                   View All
                 </button>
               </div>

@@ -37,7 +37,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   ];
 
   constructor(
-    private router: Router,
+    public router: Router,
     private dashboardService: DashboardService,
     public notifService: NotificationService,
     @Inject(PLATFORM_ID) private platformId: Object
@@ -55,6 +55,8 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       this.notifications = list.slice(0, 5);
       this.unreadCount = list.filter(n => !n.isRead).length;
     });
+
+    this.notifService.loadNotifications();
 
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
@@ -119,7 +121,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   }
 
   navigateTo(route: string) {
-    this.router.navigate([route]);
+    if (route.includes('#')) {
+      const [path, fragment] = route.split('#');
+      this.router.navigate([path], { fragment });
+    } else {
+      this.router.navigate([route]);
+    }
   }
 
   logout() {
