@@ -26,34 +26,31 @@ export class SiteConfigService {
    * Load site configuration from backend
    */
   loadSiteConfig(): void {
-    this.settingsService.getSettings().subscribe({
-      next: (settings) => {
-        this._settings.set(settings);
-        this._siteName.set(settings.siteName || 'E-Commerce Admin');
-        this._siteLogo.set(settings.siteLogo ? `${environment.backendUrl}${settings.siteLogo}` : null);
-        this._siteFavicon.set(settings.siteFavicon ? `${environment.backendUrl}${settings.siteFavicon}` : null);
-        
-        // Update browser favicon
-        this.updateBrowserFavicon(settings.siteFavicon || null);
-      },
-      error: (error) => {
-        console.error('Failed to load site configuration:', error);
-        // Keep default values on error
+    this.settingsService.getPublicSettings().subscribe({
+      next: (settings) => this.applySettings(settings),
+      error: () => {
+        // Public endpoint failed — try admin endpoint (logged-in users)
+        this.settingsService.getSettings().subscribe({
+          next: (settings) => this.applySettings(settings),
+          error: (err) => console.error('Failed to load site configuration:', err)
+        });
       }
     });
+  }
+
+  private applySettings(settings: Settings): void {
+    this._settings.set(settings);
+    this._siteName.set(settings.siteName || 'ShopZone');
+    this._siteLogo.set(settings.siteLogo ? `${environment.backendUrl}${settings.siteLogo}` : null);
+    this._siteFavicon.set(settings.siteFavicon ? `${environment.backendUrl}${settings.siteFavicon}` : null);
+    this.updateBrowserFavicon(settings.siteFavicon || null);
   }
   
   /**
    * Update site configuration (called after settings are saved)
    */
   updateSiteConfig(settings: Settings): void {
-    this._settings.set(settings);
-    this._siteName.set(settings.siteName || 'E-Commerce Admin');
-    this._siteLogo.set(settings.siteLogo ? `${environment.backendUrl}${settings.siteLogo}` : null);
-    this._siteFavicon.set(settings.siteFavicon ? `${environment.backendUrl}${settings.siteFavicon}` : null);
-    
-    // Update browser favicon
-    this.updateBrowserFavicon(settings.siteFavicon || null);
+    this.applySettings(settings);
   }
   
   /**

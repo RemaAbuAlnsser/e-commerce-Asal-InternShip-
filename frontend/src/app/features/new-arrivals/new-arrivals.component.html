@@ -1,0 +1,125 @@
+<div class="new-arrivals-page">
+  <!-- Header with announcement bar and navigation -->
+  <app-header></app-header>
+  
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="container">
+      <h1 class="page-title">New Arrivals</h1>
+      <p class="page-subtitle">Discover our latest products from the past week</p>
+    </div>
+  </div>
+
+  <!-- Category Filter -->
+  <div class="filter-section">
+    <div class="container">
+      <div class="filter-bar">
+        <h3>Filter by Category:</h3>
+        <div class="category-filters">
+          <button 
+            class="filter-btn"
+            [class.active]="selectedCategory() === null"
+            (click)="onCategoryChange(null)"
+          >
+            All Categories
+          </button>
+          @for (category of categories(); track category.id) {
+            <button 
+              class="filter-btn"
+              [class.active]="selectedCategory() === category.id"
+              (click)="onCategoryChange(category.id)"
+            >
+              {{ category.name }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products Grid -->
+  <div class="products-section">
+    <div class="container">
+      @if (isLoading()) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading new arrivals...</p>
+        </div>
+      } @else if (filteredProducts().length === 0) {
+        <div class="empty-state">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <h3>No new arrivals found</h3>
+          <p>Try selecting a different category or check back later for new products.</p>
+        </div>
+      } @else {
+        <div class="products-grid">
+          @for (product of filteredProducts(); track product?.id || $index) {
+            <div class="product-card">
+              <div class="product-image">
+                <img [src]="getProductImage(product)" [alt]="product.name" loading="lazy">
+                <div class="product-badges">
+                  <span class="badge badge-new">New</span>
+                  @if (product.oldPrice) {
+                    <span class="badge badge-sale">-{{ getDiscountPercentage(product) }}%</span>
+                  }
+                </div>
+                <div class="product-actions">
+                  <button class="action-btn" (click)="addToWishlist(product)" title="Add to Wishlist">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                  </button>
+                  <button class="action-btn" title="Quick View">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="product-info">
+                <div class="product-category">{{ product.categoryName }}</div>
+                <h3 class="product-name">{{ product.name }}</h3>
+                <div class="product-pricing">
+                  @if (product.oldPrice) {
+                    <span class="old-price">${{ product.oldPrice }}</span>
+                    <span class="current-price sale-price">${{ product.price }}</span>
+                  } @else {
+                    <span class="current-price">${{ product.price }}</span>
+                  }
+                </div>
+                <div class="product-stock">
+                  @if (product.totalStock > 0) {
+                    <span class="in-stock">{{ product.totalStock }} in stock</span>
+                  } @else {
+                    <span class="out-stock">Out of stock</span>
+                  }
+                </div>
+                <button 
+                  class="add-to-cart-btn"
+                  [disabled]="product.totalStock === 0"
+                  (click)="addToCart(product)"
+                >
+                  @if (product.totalStock > 0) {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                      <line x1="3" y1="6" x2="21" y2="6"/>
+                      <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    Add to Cart
+                  } @else {
+                    Out of Stock
+                  }
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,359 @@
+<!-- ════════════════════════════════════════════════════
+     SITE HEADER
+════════════════════════════════════════════════════ -->
+<header class="site-header" role="banner">
+
+  <!-- ░░░ TOP ANNOUNCEMENT TICKER ░░░ -->
+  @if (hasActiveAnnouncements()) {
+    <div class="announcement-bar" role="note" aria-label="Store announcements">
+      <div class="ticker-viewport">
+        <div class="ticker-track">
+
+          <!-- First pass -->
+          <span class="ticker-reel">
+            @for (ann of activeAnnouncements(); track ann.displayOrder) {
+              @if (ann.link) {
+                <a [href]="ann.link" class="ticker-item ticker-item--link">{{ ann.text }}</a>
+              } @else {
+                <span class="ticker-item">{{ ann.text }}</span>
+              }
+              <span class="ticker-sep" aria-hidden="true">✦</span>
+            }
+          </span>
+
+          <!-- Duplicate for seamless loop -->
+          <span class="ticker-reel" aria-hidden="true">
+            @for (ann of activeAnnouncements(); track ann.displayOrder) {
+              @if (ann.link) {
+                <a [href]="ann.link" class="ticker-item ticker-item--link">{{ ann.text }}</a>
+              } @else {
+                <span class="ticker-item">{{ ann.text }}</span>
+              }
+              <span class="ticker-sep" aria-hidden="true">✦</span>
+            }
+          </span>
+
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ░░░ MAIN HEADER ░░░ -->
+  <div class="main-header">
+    <div class="mh-inner">
+
+      <!-- ── Hamburger (mobile only) ── -->
+      <button
+        class="hamburger"
+        (click)="openDrawer()"
+        aria-label="Open navigation menu"
+        aria-expanded="false"
+      >
+        <span class="ham-line"></span>
+        <span class="ham-line ham-line--mid"></span>
+        <span class="ham-line"></span>
+      </button>
+
+      <!-- ── Logo ── -->
+      <a class="logo" routerLink="/" [attr.aria-label]="'Home – ' + siteName()">
+        <div class="logo-mark">
+          @if (siteLogo()) {
+            <img [src]="siteLogo()!" [alt]="siteName()" class="logo-img" />
+          } @else {
+            <svg viewBox="0 0 36 36" fill="none" aria-hidden="true">
+              <rect width="36" height="36" rx="10" fill="#4f46e5"/>
+              <path d="M9 12h18l-2.5 11H11.5L9 12z" fill="white" opacity=".95"/>
+              <circle cx="14" cy="26" r="2.2" fill="white"/>
+              <circle cx="23" cy="26" r="2.2" fill="white"/>
+              <path d="M7 10h3l1.2 2" stroke="white" stroke-width="1.6"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          }
+        </div>
+        <span class="logo-name">{{ siteName() }}</span>
+      </a>
+
+      <!-- ── Search (desktop / tablet) ── -->
+      <div class="search-bar desktop-search" role="search">
+        <input
+          type="search"
+          class="search-input"
+          placeholder="Search products, brands, categories…"
+          [(ngModel)]="searchQuery"
+          (keydown.enter)="onSearch()"
+          aria-label="Search"
+          autocomplete="off"
+        />
+        <button class="search-submit" (click)="onSearch()" aria-label="Submit search" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- ── Right action icons ── -->
+      <nav class="header-icons" aria-label="User actions">
+
+        <!-- Mobile: search toggle -->
+        <button
+          class="hicon mobile-only"
+          (click)="toggleMobileSearch()"
+          [attr.aria-expanded]="mobileSearchOpen()"
+          aria-label="Toggle search"
+          type="button"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+
+        <!-- Account -->
+        <button class="hicon desktop-only" aria-label="My account" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span class="hicon-label">Account</span>
+        </button>
+
+        <!-- Wishlist -->
+        <button class="hicon desktop-only" aria-label="My wishlist" type="button">
+          <span class="hicon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            @if (wishlistCount() > 0) {
+              <span class="hicon-badge hicon-badge--rose" [attr.aria-label]="wishlistCount() + ' items in wishlist'">
+                {{ wishlistCount() }}
+              </span>
+            }
+          </span>
+          <span class="hicon-label">Wishlist</span>
+        </button>
+
+        <!-- Cart -->
+        <button class="hicon hicon--cart" aria-label="Shopping cart" type="button">
+          <span class="hicon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            @if (cartCount() > 0) {
+              <span class="hicon-badge hicon-badge--red" [attr.aria-label]="cartCount() + ' items in cart'">
+                {{ cartCount() }}
+              </span>
+            }
+          </span>
+          <span class="hicon-label">Cart</span>
+        </button>
+
+      </nav>
+    </div>
+
+    <!-- ── Mobile search panel ── -->
+    @if (mobileSearchOpen()) {
+      <div class="mobile-search-panel" role="search">
+        <div class="search-bar">
+          <input
+            type="search"
+            class="search-input"
+            placeholder="Search products…"
+            [(ngModel)]="searchQuery"
+            (keydown.enter)="onSearch()"
+            aria-label="Search"
+            autocomplete="off"
+            autofocus
+          />
+          <button class="search-submit" (click)="onSearch()" aria-label="Submit search" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- ░░░ NAVIGATION BAR ░░░ -->
+  <nav class="nav-bar" aria-label="Main navigation">
+    <div class="nav-inner">
+
+      <ul class="nav-list" role="list">
+
+        <!-- Static nav links -->
+        @for (link of navLinks; track link.path) {
+          <li class="nav-item" role="listitem">
+            <a
+              class="nav-link"
+              [routerLink]="link.path"
+              routerLinkActive="is-active"
+              [routerLinkActiveOptions]="{ exact: link.exact }"
+            >
+              {{ link.label }}
+              @if (link.badge) {
+                <span class="nav-badge"
+                  [class.nav-badge--green]="link.badge === 'New'"
+                  [class.nav-badge--red]="link.badge === 'Sale'"
+                >{{ link.badge }}</span>
+              }
+            </a>
+          </li>
+        }
+
+        <!-- Categories with dropdown -->
+        <li class="nav-item nav-item--has-drop" role="listitem">
+          <button
+            #catTrigger
+            class="nav-link nav-link--trigger"
+            [class.is-active]="catOpen()"
+            (click)="toggleCat($event)"
+            [attr.aria-expanded]="catOpen()"
+            aria-haspopup="true"
+            type="button"
+          >
+            Categories
+            <svg class="nav-chevron" [class.is-open]="catOpen()"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          @if (catOpen()) {
+            <div #catDropdown class="nav-dropdown" role="menu" aria-label="Product categories">
+              <div class="drop-grid">
+                @for (cat of categories(); track cat.id) {
+                  <a
+                    class="drop-item"
+                    [routerLink]="cat.path"
+                    (click)="catOpen.set(false)"
+                    role="menuitem"
+                  >
+                    <span class="drop-emoji" aria-hidden="true">
+                      @if (cat.imageUrl) {
+                        <img [src]="cat.imageUrl" [alt]="cat.label" class="category-icon-img">
+                      } @else {
+                        {{ cat.emoji }}
+                      }
+                    </span>
+                    <span class="drop-label">{{ cat.label }}</span>
+                  </a>
+                }
+              </div>
+              <div class="drop-footer">
+                <a class="drop-all" routerLink="/categories" (click)="catOpen.set(false)">
+                  Browse all categories
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          }
+        </li>
+
+      </ul>
+
+      <!-- Sale promo chip -->
+    
+    </div>
+  </nav>
+
+</header>
+
+
+<!-- ════════════════════════════════════════════════════
+     MOBILE DRAWER — OVERLAY
+════════════════════════════════════════════════════ -->
+<div
+  class="overlay"
+  [class.is-visible]="drawerOpen()"
+  (click)="closeDrawer()"
+  aria-hidden="true"
+></div>
+
+
+<!-- ════════════════════════════════════════════════════
+     MOBILE DRAWER — PANEL
+════════════════════════════════════════════════════ -->
+<aside
+  class="drawer"
+  [class.is-open]="drawerOpen()"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Navigation menu"
+>
+
+  <!-- Drawer header -->
+  <div class="drawer-top">
+    <a class="logo" routerLink="/" (click)="closeDrawer()" aria-label="Home">
+      <div class="logo-mark">
+        @if (siteLogo()) {
+          <img [src]="siteLogo()!" [alt]="siteName()" class="logo-img" />
+        } @else {
+          <svg viewBox="0 0 36 36" fill="none" aria-hidden="true">
+            <rect width="36" height="36" rx="10" fill="#4f46e5"/>
+            <path d="M9 12h18l-2.5 11H11.5L9 12z" fill="white" opacity=".95"/>
+            <circle cx="14" cy="26" r="2.2" fill="white"/>
+            <circle cx="23" cy="26" r="2.2" fill="white"/>
+          </svg>
+        }
+      </div>
+      <span class="logo-name">{{ siteName() }}</span>
+    </a>
+    <button class="drawer-close" (click)="closeDrawer()" aria-label="Close menu" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Drawer body -->
+  <div class="drawer-body">
+
+    <!-- Main links -->
+    <ul class="drawer-nav" role="list">
+      @for (link of navLinks; track link.path) {
+        <li role="listitem">
+          <a
+            class="drawer-link"
+            [routerLink]="link.path"
+            routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ exact: link.exact }"
+            (click)="closeDrawer()"
+          >
+            {{ link.label }}
+            @if (link.badge) {
+              <span class="nav-badge"
+                [class.nav-badge--green]="link.badge === 'New'"
+                [class.nav-badge--red]="link.badge === 'Sale'"
+              >{{ link.badge }}</span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+
+    <div class="drawer-divider"></div>
+
+    <!-- Categories -->
+    
+  </div>
+
+  <!-- Drawer footer -->
+  <div class="drawer-foot">
+    <button class="drawer-account" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      My Account
+    </button>
+  </div>
+
+</aside>

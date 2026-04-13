@@ -40,6 +40,10 @@ export class SettingsService {
     return this.http.get<Settings>(this.adminUrl);
   }
 
+  getPublicSettings(): Observable<Settings> {
+    return this.http.get<Settings>(this.publicUrl);
+  }
+
   updateSettings(formData: FormData): Observable<Settings> {
     return this.http.put<Settings>(this.adminUrl, formData);
   }
@@ -47,6 +51,10 @@ export class SettingsService {
   // ── Site Images ─────────────────────────────────────────────────────────
   getSiteImages(): Observable<SiteImage[]> {
     return this.http.get<SiteImage[]>(this.adminSiteImagesUrl);
+  }
+
+  getPublicSiteImages(): Observable<SiteImage[]> {
+    return this.http.get<SiteImage[]>(this.publicSiteImagesUrl);
   }
 
   addSiteImage(file: File, displayOrder: number): Observable<SiteImage> {

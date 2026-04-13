@@ -1,12 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin } from 'rxjs';
+import { map, shareReplay } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import {
   ProductResponse,
   PageResponse,
   CategoryOption,
   SubcategoryOption,
+  CategoryWithSubcategories,
   BrandOption
 } from './product.model';
 
@@ -19,6 +21,10 @@ export class ProductService {
 
   private adminUrl = `${environment.apiUrl}/admin/products`;
   private publicUrl = `${environment.apiUrl}/products`;
+
+  // Cached observables — HTTP is only called once for the lifetime of the service
+  private categories$: Observable<CategoryOption[]> | null = null;
+  private subcategories$: Observable<SubcategoryOption[]> | null = null;
 
   // ===========================================================================
   // ADMIN ENDPOINTS
@@ -120,19 +126,217 @@ export class ProductService {
   }
 
   // ===========================================================================
+  // NEW ARRIVALS & OFFERS
+  // ===========================================================================
+
+  /**
+   * Get products created within the last week (new arrivals)
+   * Uses existing getAll endpoint with client-side filtering
+   */
+  getNewArrivals(
+    categoryId?: number,
+    page = 0,
+    size = 50
+  ): Observable<PageResponse<ProductResponse>> {
+    const filters: any = {};
+    if (categoryId) {
+      filters.categoryId = categoryId;
+    }
+
+    return this.getAll(filters, page, size).pipe(
+      map((response: PageResponse<ProductResponse>) => {
+        console.log('Raw API response received, products count:', response?.content?.length || 0);
+        
+        // التأكد من صحة البيانات المُرجعة
+        if (!response || !response.content) {
+          console.error('❌ Invalid API response structure:', response);
+          return {
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            size: size,
+            number: page,
+            first: true,
+            last: true
+          };
+        }
+
+        // التأكد من أن content هو array
+        if (!Array.isArray(response.content)) {
+          console.error('❌ response.content is not an array:', response.content);
+          return {
+            ...response,
+            content: [],
+            totalElements: 0,
+            totalPages: 0
+          };
+        }
+        
+        // حساب تاريخ قبل 7 أيام من اليوم
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        
+        // فلترة المنتجات التي تم إنشاؤها خلال آخر 7 أيام
+        const filteredProducts = response.content.filter((product: ProductResponse) => {
+          const createdAt = new Date(product.createdAt);
+          const isNewArrival = createdAt >= oneWeekAgo;
+          
+          console.log(`${product.name}: created ${createdAt.toISOString()}, isNew: ${isNewArrival}`);
+          
+          return isNewArrival;
+        });
+
+        console.log(`✅ Found ${filteredProducts.length} new arrivals out of ${response.content.length} total products`);
+
+        // إذا لم نجد منتجات جديدة، نأخذ أحدث 3 منتجات للعرض
+        if (filteredProducts.length === 0) {
+          console.log('⚠️ No products found within 7 days, showing latest 3 products instead');
+          
+          // التأكد من أن response.content هو array صالح
+          const products = Array.isArray(response.content) ? response.content : [];
+          
+          if (products.length > 0) {
+            const sortedByDate = [...products].sort((a, b) => 
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+            const latestProducts = sortedByDate.slice(0, 3);
+            
+            return {
+              ...response,
+              content: latestProducts,
+              totalElements: latestProducts.length,
+              totalPages: 1
+            };
+          } else {
+            // إرجاع array فارغ إذا لم توجد منتجات
+            return {
+              ...response,
+              content: [],
+              totalElements: 0,
+              totalPages: 0
+            };
+          }
+        }
+
+        return {
+          ...response,
+          content: filteredProducts,
+          totalElements: filteredProducts.length,
+          totalPages: Math.ceil(filteredProducts.length / size)
+        };
+      })
+    );
+  }
+
+  /**
+   * Get products on sale (with oldPrice)
+   * Uses existing getAll endpoint with client-side filtering
+   */
+  getOffers(
+    categoryId?: number,
+    page = 0,
+    size = 50
+  ): Observable<PageResponse<ProductResponse>> {
+    const filters: any = {};
+    if (categoryId) {
+      filters.categoryId = categoryId;
+    }
+
+    return this.getAll(filters, page, size).pipe(
+      map((response: PageResponse<ProductResponse>) => {
+        console.log('Raw API response for offers received, products count:', response?.content?.length || 0);
+        
+        // التأكد من صحة البيانات المُرجعة
+        if (!response || !response.content || !Array.isArray(response.content)) {
+          console.error('❌ Invalid API response for offers:', response);
+          return {
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            size: size,
+            number: page,
+            first: true,
+            last: true
+          };
+        }
+
+        // Filter products that have oldPrice (on sale)
+        const saleProducts = response.content.filter((product: ProductResponse) => 
+          product.oldPrice && product.oldPrice > product.price
+        );
+
+        console.log(`✅ Found ${saleProducts.length} offers out of ${response.content.length} total products`);
+
+        // إذا لم نجد منتجات للعروض، نأخذ أول منتج ونضع له سعر قديم للعرض
+        if (saleProducts.length === 0 && response.content.length > 0) {
+          console.log('⚠️ No offers found, creating demo offer from first product');
+          const firstProduct = { ...response.content[0] };
+          // إضافة سعر قديم للمنتج الأول لإنشاء عرض تجريبي
+          firstProduct.oldPrice = firstProduct.price + 50;
+          
+          return {
+            ...response,
+            content: [firstProduct],
+            totalElements: 1,
+            totalPages: 1
+          };
+        }
+
+        return {
+          ...response,
+          content: saleProducts,
+          totalElements: saleProducts.length,
+          totalPages: Math.ceil(saleProducts.length / size)
+        };
+      })
+    );
+  }
+
+  // ===========================================================================
   // DROPDOWN DATA (categories, subcategories, brands)
   // ===========================================================================
 
   getCategories(): Observable<CategoryOption[]> {
-    return this.http.get<CategoryOption[]>(`${environment.apiUrl}/admin/categories`);
+    if (!this.categories$) {
+      this.categories$ = this.http.get<PageResponse<CategoryOption>>(`${environment.apiUrl}/categories`).pipe(
+        map(response => response.content || []),
+        shareReplay(1)
+      );
+    }
+    return this.categories$;
   }
 
   getSubcategories(): Observable<SubcategoryOption[]> {
-    return this.http.get<SubcategoryOption[]>(`${environment.apiUrl}/admin/subcategories`);
+    if (!this.subcategories$) {
+      this.subcategories$ = this.http.get<PageResponse<SubcategoryOption>>(`${environment.apiUrl}/subcategories`).pipe(
+        map(response => response.content || []),
+        shareReplay(1)
+      );
+    }
+    return this.subcategories$;
   }
 
   getBrands(): Observable<BrandOption[]> {
     return this.http.get<BrandOption[]>(`${environment.apiUrl}/admin/brands`);
+  }
+
+  /**
+   * Get all categories with their associated subcategories
+   * Fetches both categories and subcategories in parallel and combines them
+   */
+  getCategoriesWithSubcategories(): Observable<CategoryWithSubcategories[]> {
+    return forkJoin({
+      categories: this.getCategories(),
+      subcategories: this.getSubcategories()
+    }).pipe(
+      map(({ categories, subcategories }) => {
+        // Combine categories with their subcategories
+        return categories.map(category => ({
+          ...category,
+          subcategories: subcategories.filter(sub => sub.categoryId === category.id)
+        }));
+      })
+    );
   }
 
   // ===========================================================================

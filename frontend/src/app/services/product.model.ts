@@ -71,12 +71,37 @@ export interface ProductForm {
 export interface CategoryOption {
   id: number;
   name: string;
+  slug?: string;
+  description?: string;
+  imageUrl?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface SubcategoryOption {
   id: number;
   name: string;
   categoryId: number;
+  slug?: string;
+  description?: string;
+  imageUrl?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  categoryName?: string;
+}
+
+export interface CategoryWithSubcategories {
+  id: number;
+  name: string;
+  slug?: string;
+  description?: string;
+  imageUrl?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  subcategories: SubcategoryOption[];
 }
 
 export interface BrandOption {

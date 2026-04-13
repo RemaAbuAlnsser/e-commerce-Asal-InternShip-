@@ -34,6 +34,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     { label: 'Orders', icon: 'shopping_cart', route: '/admin/orders', active: false },
     { label: 'Delivery', icon: 'local_shipping', route: '/admin/delivery', active: false },
     { label: 'Subscribers', icon: 'people', route: '/admin/subscribers', active: false },
+    {label: 'Announcements', icon: 'announcements', route: '/admin/announcements', active: false },
     { label: 'Settings', icon: 'settings', route: '/admin/settings', active: false }
   ];
 
@@ -174,6 +175,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     if (route.includes('/orders')) return 'Orders';
     if (route.includes('/delivery')) return 'Delivery';
     if (route.includes('/subscribers')) return 'Subscribers';
+    if (route.includes('/announcements')) return 'Announcements';
     if (route.includes('/settings')) return 'Settings';
     return 'Dashboard';
   }

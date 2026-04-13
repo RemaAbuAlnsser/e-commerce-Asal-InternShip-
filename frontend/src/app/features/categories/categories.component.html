@@ -1,0 +1,100 @@
+<div class="categories-page">
+  <!-- Header with announcement bar and navigation -->
+  <app-header></app-header>
+  
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="container">
+      <h1 class="page-title">Shop by Category</h1>
+      <p class="page-subtitle">Explore our wide range of products organized by category</p>
+    </div>
+  </div>
+
+  <div class="container">
+    @if (isLoading()) {
+      <!-- Loading State -->
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading categories...</p>
+      </div>
+    } @else if (selectedCategory()) {
+      <!-- Subcategories View -->
+      <div class="subcategories-view">
+        <div class="breadcrumb">
+          <button class="back-btn" (click)="goBack()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15,18 9,12 15,6"/>
+            </svg>
+            Back to Categories
+          </button>
+          <span class="breadcrumb-separator">/</span>
+          <span class="current-category">{{ selectedCategory()!.name }}</span>
+        </div>
+
+        <div class="category-header">
+          <div class="category-icon">
+            @if (selectedCategory()!.imageUrl) {
+              <img [src]="getImageUrl(selectedCategory()!.imageUrl)" [alt]="selectedCategory()!.name" class="category-header-img">
+            } @else {
+              {{ selectedCategory()!.emoji }}
+            }
+          </div>
+          <div class="category-info">
+            <h2>{{ selectedCategory()!.name }}</h2>
+            <p>{{ selectedCategory()!.description }}</p>
+            <span class="product-count">{{ selectedCategory()!.productCount }} products available</span>
+          </div>
+        </div>
+
+        <div class="subcategories-grid">
+          @for (subcategory of selectedCategory()!.subcategoriesWithDetails; track subcategory.id) {
+            <div class="subcategory-card" (click)="navigateToCategory(selectedCategory()!.id, subcategory.id)">
+              <div class="subcategory-content">
+                <h3>{{ subcategory.name }}</h3>
+                <p>{{ subcategory.description }}</p>
+                <div class="subcategory-meta">
+                  <span class="product-count">{{ subcategory.productCount }} products</span>
+                  <svg class="arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9,18 15,12 9,6"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    } @else {
+      <!-- Main Categories View -->
+      <div class="categories-grid">
+        @for (category of categories(); track category.id) {
+          <div class="category-card" (click)="selectCategory(category)">
+            <div class="category-image">
+              @if (category.imageUrl) {
+                <img [src]="getImageUrl(category.imageUrl)" [alt]="category.name" class="category-img">
+              } @else {
+                <div class="category-emoji">{{ category.emoji }}</div>
+              }
+              <div class="category-overlay">
+                <span class="view-subcategories">View Subcategories</span>
+              </div>
+            </div>
+            <div class="category-content">
+              <h3>{{ category.name }}</h3>
+              <p>{{ category.description }}</p>
+              <div class="category-meta">
+                <span class="product-count">{{ category.productCount }} products</span>
+                <span class="subcategory-count">{{ category.subcategoriesWithDetails?.length || 0 }} subcategories</span>
+              </div>
+              <button class="explore-btn">
+                Explore Category
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9,18 15,12 9,6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

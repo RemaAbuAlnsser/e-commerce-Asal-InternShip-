@@ -1,5 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* Scroll lock — applied by header when mobile drawer is open */
+body.no-scroll { overflow: hidden; }
+
 /* Global input cursor fix */
 input[type="email"],
 input[type="password"],
