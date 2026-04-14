@@ -2,11 +2,46 @@
   <!-- Header with announcement bar and navigation -->
   <app-header></app-header>
   
-  <!-- Page Header -->
+  <!-- Page Hero -->
   <div class="page-header">
-    <div class="container">
+    <!-- Floating decorative shapes -->
+    <div class="hero-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+      <div class="shape shape-4"></div>
+    </div>
+
+    <div class="container hero-container">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Updated This Week
+      </div>
       <h1 class="page-title">New Arrivals</h1>
-      <p class="page-subtitle">Discover our latest products from the past week</p>
+      <p class="page-subtitle">Be the first to explore our freshest picks — curated weekly just for you</p>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <span class="stat-icon">✦</span>
+          <span>Freshest Picks</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-icon">🚀</span>
+          <span>Weekly Updates</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-icon">💎</span>
+          <span>Premium Quality</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave separator -->
+    <div class="hero-wave">
+      <svg viewBox="0 0 1440 70" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0,35 C240,70 480,0 720,35 C960,70 1200,0 1440,35 L1440,70 L0,70 Z" fill="#f8fafc"/>
+      </svg>
     </div>
   </div>
 
@@ -57,33 +92,49 @@
       } @else {
         <div class="products-grid">
           @for (product of filteredProducts(); track product?.id || $index) {
-            <div class="product-card">
+            <div class="product-card" [routerLink]="['/product', product.id]" style="cursor:pointer">
+
+              <!-- Image + overlays -->
               <div class="product-image">
-                <img [src]="getProductImage(product)" [alt]="product.name" loading="lazy">
+                <img class="product-main-img" [src]="getProductImage(product)" [alt]="product.name" loading="lazy">
+
+                @if (getHoverImage(product)) {
+                  <img class="product-hover-img" [src]="getHoverImage(product)!" [alt]="product.name" loading="lazy">
+                }
+
+                <!-- Badges top-left -->
                 <div class="product-badges">
                   <span class="badge badge-new">New</span>
                   @if (product.oldPrice) {
                     <span class="badge badge-sale">-{{ getDiscountPercentage(product) }}%</span>
                   }
                 </div>
-                <div class="product-actions">
-                  <button class="action-btn" (click)="addToWishlist(product)" title="Add to Wishlist">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+
+                <!-- Wishlist always visible top-right -->
+                <button class="wishlist-btn" (click)="addToWishlist(product); $event.stopPropagation()" title="Add to Wishlist">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </button>
+
+                <!-- Hover overlay: Quick Add -->
+                <div class="image-overlay">
+                  <button class="quick-add-btn" [disabled]="product.totalStock === 0" (click)="addToCart(product); $event.stopPropagation()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                      <line x1="3" y1="6" x2="21" y2="6"/>
+                      <path d="M16 10a4 4 0 0 1-8 0"/>
                     </svg>
-                  </button>
-                  <button class="action-btn" title="Quick View">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
+                    Quick Add
                   </button>
                 </div>
               </div>
-              
+
+              <!-- Info -->
               <div class="product-info">
                 <div class="product-category">{{ product.categoryName }}</div>
                 <h3 class="product-name">{{ product.name }}</h3>
+
                 <div class="product-pricing">
                   @if (product.oldPrice) {
                     <span class="old-price">${{ product.oldPrice }}</span>
@@ -92,30 +143,32 @@
                     <span class="current-price">${{ product.price }}</span>
                   }
                 </div>
-                <div class="product-stock">
-                  @if (product.totalStock > 0) {
-                    <span class="in-stock">{{ product.totalStock }} in stock</span>
-                  } @else {
-                    <span class="out-stock">Out of stock</span>
-                  }
-                </div>
-                <button 
-                  class="add-to-cart-btn"
-                  [disabled]="product.totalStock === 0"
-                  (click)="addToCart(product)"
-                >
-                  @if (product.totalStock > 0) {
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+                <div class="product-footer">
+                  <div class="product-stock">
+                    @if (product.totalStock > 0) {
+                      <span class="stock-dot in"></span>
+                      <span class="in-stock">In Stock</span>
+                    } @else {
+                      <span class="stock-dot out"></span>
+                      <span class="out-stock">Sold Out</span>
+                    }
+                  </div>
+                  <button
+                    class="add-to-cart-btn"
+                    [disabled]="product.totalStock === 0"
+                    (click)="addToCart(product); $event.stopPropagation()"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                       <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
                       <line x1="3" y1="6" x2="21" y2="6"/>
                       <path d="M16 10a4 4 0 0 1-8 0"/>
                     </svg>
-                    Add to Cart
-                  } @else {
-                    Out of Stock
-                  }
-                </button>
+                    {{ product.totalStock > 0 ? 'Add to Cart' : 'Sold Out' }}
+                  </button>
+                </div>
               </div>
+
             </div>
           }
         </div>

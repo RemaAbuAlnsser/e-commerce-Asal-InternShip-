@@ -13,25 +13,183 @@
   padding: 0 1rem;
 }
 
-/* ── Page Header ── */
+/* ── Page Hero ── */
 .page-header {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 40%, #4f46e5 75%, #818cf8 100%);
   color: white;
-  padding: 4rem 0;
+  padding: 6rem 0 7rem;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Grid overlay pattern */
+.hero-grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Floating shapes */
+.hero-shapes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.shape {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.shape-1 {
+  width: 500px; height: 500px;
+  border-radius: 50%;
+  top: -200px; left: -150px;
+  animation: catFloat1 10s ease-in-out infinite;
+}
+
+.shape-2 {
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  top: -80px; right: 5%;
+  background: rgba(255, 255, 255, 0.04);
+  animation: catFloat2 13s ease-in-out infinite;
+}
+
+.shape-3 {
+  width: 120px; height: 120px;
+  border-radius: 20px;
+  bottom: 60px; left: 12%;
+  background: rgba(255, 255, 255, 0.05);
+  transform: rotate(20deg);
+  animation: catFloat1 8s ease-in-out infinite reverse;
+}
+
+.shape-4 {
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  bottom: 30px; right: 15%;
+  background: rgba(255, 255, 255, 0.03);
+  animation: catFloat2 11s ease-in-out infinite 1.5s;
+}
+
+@keyframes catFloat1 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(20px, -20px) rotate(5deg); }
+  66% { transform: translate(-15px, 12px) rotate(-4deg); }
+}
+
+@keyframes catFloat2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-20px, 15px); }
+}
+
+/* Hero container */
+.hero-container {
+  position: relative;
+  z-index: 2;
+}
+
+/* Badge */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.45rem 1.25rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(12px);
+  text-transform: uppercase;
 }
 
 .page-title {
-  font-size: 3rem;
-  font-weight: 800;
-  margin: 0 0 1rem;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  font-size: 4rem;
+  font-weight: 900;
+  margin: 0 0 1.25rem;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  position: relative;
+  z-index: 1;
+}
+
+.title-accent {
+  display: inline-block;
+  background: linear-gradient(135deg, #a5b4fc, #e879f9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .page-subtitle {
   font-size: 1.2rem;
-  opacity: 0.9;
-  margin: 0;
+  opacity: 0.85;
+  margin: 0 auto 2.5rem;
+  max-width: 500px;
+  line-height: 1.65;
+  position: relative;
+  z-index: 1;
+}
+
+/* Hero stats bar */
+.hero-stats {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50px;
+  padding: 0.65rem 1.5rem;
+  backdrop-filter: blur(12px);
+  position: relative;
+  z-index: 1;
+  gap: 0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0 1.1rem;
+  white-space: nowrap;
+}
+
+.stat-icon {
+  font-size: 0.95rem;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+/* Wave separator */
+.hero-wave {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  line-height: 0;
+}
+
+.hero-wave svg {
+  display: block;
+  width: 100%;
+  height: 70px;
 }
 
 /* ── Loading State ── */
@@ -326,14 +484,30 @@
 
 /* ── Responsive Design ── */
 @media (max-width: 768px) {
-  .page-title {
-    font-size: 2rem;
+  .page-header {
+    padding: 4rem 0 5.5rem;
   }
-  
+
+  .page-title {
+    font-size: 2.5rem;
+    letter-spacing: -0.5px;
+  }
+
   .page-subtitle {
     font-size: 1rem;
   }
-  
+
+  .hero-stats {
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 16px;
+    padding: 0.75rem 1rem;
+  }
+
+  .stat-item {
+    padding: 0.25rem 0.75rem;
+  }
+
   .categories-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;

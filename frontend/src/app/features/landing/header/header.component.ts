@@ -64,6 +64,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   /* ── UI state ────────────────────────────────── */
   readonly drawerOpen       = signal(false);
   readonly catOpen          = signal(false);
+  readonly drawerCatOpen    = signal(false);
   readonly mobileSearchOpen = signal(false);
 
   /* plain string — required for [(ngModel)] two-way binding */
@@ -120,7 +121,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   closeDrawer(): void {
     this.drawerOpen.set(false);
+    this.drawerCatOpen.set(false);
     if (this.isBrowser) this.doc.body.classList.remove('no-scroll');
+  }
+
+  /* ── Drawer categories accordion ────────────── */
+  toggleDrawerCat(): void {
+    this.drawerCatOpen.update(v => !v);
   }
 
   /* ── Categories dropdown ─────────────────────── */

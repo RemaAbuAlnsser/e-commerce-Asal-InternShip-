@@ -642,7 +642,7 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
    OVERLAY
 ════════════════════════════════════════════════════ */
 .overlay {
-  display: none;
+  display: block;
   position: fixed;
   inset: 0;
   background: rgba(15,23,42,.5);
@@ -650,11 +650,13 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
   -webkit-backdrop-filter: blur(2px);
   z-index: 700;
   opacity: 0;
+  pointer-events: none;
   transition: opacity var(--dur-slow) var(--ease);
 }
 
 .overlay.is-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 
@@ -760,6 +762,45 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
   letter-spacing: 0.08em;
 }
 
+/* Categories accordion toggle */
+.drawer-cat-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--c-text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.drawer-cat-toggle:hover {
+  background: var(--c-surface-2);
+  color: var(--c-primary);
+}
+
+.drawer-cat-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.drawer-cat-arrow {
+  transition: transform var(--dur-mid) var(--ease);
+  flex-shrink: 0;
+  color: var(--c-text-3);
+}
+
+.drawer-cat-arrow.is-open {
+  transform: rotate(180deg);
+  color: var(--c-primary);
+}
+
 .drawer-cats { padding: 0.1rem 0; }
 
 .drawer-cat-link {
@@ -816,6 +857,50 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
 }
 
 .drawer-account svg { width: 20px; height: 20px; }
+
+.drawer-foot-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.drawer-foot-row .drawer-account {
+  flex: 1;
+}
+
+.drawer-wishlist {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    color        var(--dur-fast) var(--ease),
+    background   var(--dur-fast) var(--ease);
+}
+
+.drawer-wishlist:hover {
+  border-color: var(--c-rose);
+  color: var(--c-rose);
+  background: #fff1f2;
+}
+
+.drawer-wishlist svg { width: 20px; height: 20px; }
+
+.drawer-cat-all {
+  color: var(--c-primary);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
 
 
 /* ════════════════════════════════════════════════════
@@ -890,14 +975,13 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
   .desktop-search { display: none; }
   .nav-bar        { display: none; }
 
-  /* Swap icon visibility */
-  .desktop-only { display: none !important; }
+  /* Show mobile search toggle, hide desktop-only labels */
   .mobile-only  { display: flex !important; }
 
-  /* Make overlay & drawer available */
-  .overlay { display: block; }
+  /* Account & Wishlist — show as icon-only on mobile (no label) */
+  .desktop-only { display: flex !important; }
 
-  /* Tighter icon area */
-  .hicon { min-width: 44px; height: 44px; }
+  /* Tighter icon area — hide labels on mobile */
+  .hicon { min-width: 40px; height: 44px; padding: 0 4px; }
   .hicon-label { display: none; }
 }

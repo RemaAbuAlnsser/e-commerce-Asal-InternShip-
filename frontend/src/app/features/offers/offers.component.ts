@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { HeaderComponent } from '../landing/header/header.component';
 import { ProductService } from '../../services/product.service';
 import { ProductResponse, CategoryOption } from '../../services/product.model';
@@ -8,7 +9,7 @@ import { ProductResponse, CategoryOption } from '../../services/product.model';
 @Component({
   selector: 'app-offers',
   standalone: true,
-  imports: [CommonModule, FormsModule, HeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, HeaderComponent],
   templateUrl: './offers.component.html',
   styleUrl: './offers.component.css'
 })
@@ -123,6 +124,11 @@ export class OffersComponent implements OnInit {
       return '/assets/images/placeholder.jpg'; // صورة افتراضية
     }
     return this.productService.resolveImageUrl(product.imageUrl);
+  }
+
+  getHoverImage(product: ProductResponse): string | null {
+    if (!product || !product.hoverImageUrl) return null;
+    return this.productService.resolveImageUrl(product.hoverImageUrl);
   }
 
   getDiscountPercentage(product: ProductResponse): number {

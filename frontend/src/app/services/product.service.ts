@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, forkJoin } from 'rxjs';
-import { map, shareReplay } from 'rxjs/operators';
+import { map, shareReplay, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import {
   ProductResponse,
@@ -123,6 +123,61 @@ export class ProductService {
       .set('page', page.toString())
       .set('size', size.toString());
     return this.http.get<PageResponse<ProductResponse>>(`${this.publicUrl}/search`, { params });
+  }
+
+  /**
+   * Get related products based on category and subcategory
+   * Excludes the current product from results
+   */
+  getRelatedProducts(
+    currentProductId: number,
+    categoryId: number,
+    subcategoryId?: number | null,
+    limit = 4
+  ): Observable<ProductResponse[]> {
+    // First try to get products from same subcategory if available
+    const filters: any = {};
+    if (subcategoryId) {
+      filters.subcategoryId = subcategoryId;
+    } else {
+      filters.categoryId = categoryId;
+    }
+
+    return this.getAll(filters, 0, limit + 10).pipe(
+      switchMap((response: PageResponse<ProductResponse>) => {
+        if (!response || !response.content) {
+          return [[]];
+        }
+
+        // Filter out current product
+        const relatedProducts = response.content
+          .filter(product => product.id !== currentProductId)
+          .slice(0, limit);
+
+        // If we have enough products or no subcategory, return what we have
+        if (relatedProducts.length >= limit || !subcategoryId) {
+          return [relatedProducts];
+        }
+
+        // If we need more products, get from main category
+        return this.getAll({ categoryId }, 0, limit + 10).pipe(
+          map((categoryResponse: PageResponse<ProductResponse>) => {
+            if (!categoryResponse || !categoryResponse.content) {
+              return relatedProducts;
+            }
+
+            const categoryProducts = categoryResponse.content
+              .filter(product => 
+                product.id !== currentProductId && 
+                !relatedProducts.some(rp => rp.id === product.id)
+              )
+              .slice(0, limit - relatedProducts.length);
+
+            return [...relatedProducts, ...categoryProducts];
+          })
+        );
+      })
+    );
   }
 
   // ===========================================================================

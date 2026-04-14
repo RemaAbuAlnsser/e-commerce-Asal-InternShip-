@@ -2,11 +2,49 @@
   <!-- Header with announcement bar and navigation -->
   <app-header></app-header>
   
-  <!-- Page Header -->
+  <!-- Page Hero -->
   <div class="page-header">
-    <div class="container">
-      <h1 class="page-title">Shop by Category</h1>
-      <p class="page-subtitle">Explore our wide range of products organized by category</p>
+    <!-- Decorative background elements -->
+    <div class="hero-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+      <div class="shape shape-4"></div>
+    </div>
+    <!-- Grid overlay -->
+    <div class="hero-grid-overlay"></div>
+
+    <div class="container hero-container">
+      <div class="hero-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm11 0h7v7h-7v-7z"/></svg>
+        Browse All Categories
+      </div>
+      <h1 class="page-title">Shop by <span class="title-accent">Category</span></h1>
+      <p class="page-subtitle">Explore our wide range of products — find exactly what you're looking for</p>
+
+      <div class="hero-stats">
+        <div class="stat-item">
+          <span class="stat-icon">🗂️</span>
+          <span>All Departments</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-icon">🔍</span>
+          <span>Easy Navigation</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-icon">🏷️</span>
+          <span>Best Prices</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave separator -->
+    <div class="hero-wave">
+      <svg viewBox="0 0 1440 70" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0,50 C480,0 960,70 1440,20 L1440,70 L0,70 Z" fill="#f8fafc"/>
+      </svg>
     </div>
   </div>
 

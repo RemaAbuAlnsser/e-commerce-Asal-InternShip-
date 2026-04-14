@@ -341,19 +341,79 @@
 
     <div class="drawer-divider"></div>
 
-    <!-- Categories -->
-    
+    <!-- Categories accordion -->
+    <button
+      class="drawer-cat-toggle"
+      (click)="toggleDrawerCat()"
+      [attr.aria-expanded]="drawerCatOpen()"
+      type="button"
+    >
+      <span class="drawer-cat-toggle-label">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Categories
+      </span>
+      <svg
+        class="drawer-cat-arrow"
+        [class.is-open]="drawerCatOpen()"
+        width="18" height="18" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </button>
+
+    @if (drawerCatOpen()) {
+      <ul class="drawer-cats" role="list">
+        @for (cat of categories(); track cat.id) {
+          <li role="listitem">
+            <a class="drawer-cat-link" [routerLink]="cat.path" (click)="closeDrawer()">
+              <span class="drawer-cat-emoji" aria-hidden="true">
+                @if (cat.imageUrl) {
+                  <img [src]="cat.imageUrl" [alt]="cat.label" class="category-icon-img">
+                } @else {
+                  {{ cat.emoji }}
+                }
+              </span>
+              {{ cat.label }}
+            </a>
+          </li>
+        }
+        <li role="listitem">
+          <a class="drawer-cat-link drawer-cat-all" routerLink="/categories" (click)="closeDrawer()">
+            Browse all categories →
+          </a>
+        </li>
+      </ul>
+    }
+
   </div>
 
   <!-- Drawer footer -->
   <div class="drawer-foot">
-    <button class="drawer-account" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-        <circle cx="12" cy="7" r="4"/>
-      </svg>
-      My Account
-    </button>
+    <div class="drawer-foot-row">
+      <button class="drawer-account" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        Account
+      </button>
+      <button class="drawer-wishlist" type="button">
+        <span class="hicon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          @if (wishlistCount() > 0) {
+            <span class="hicon-badge hicon-badge--rose">{{ wishlistCount() }}</span>
+          }
+        </span>
+        Wishlist
+      </button>
+    </div>
   </div>
 
 </aside>
