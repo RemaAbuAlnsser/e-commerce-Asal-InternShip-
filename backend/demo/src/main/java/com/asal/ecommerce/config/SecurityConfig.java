@@ -54,6 +54,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/delivery-cities/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/customer/delivery-cities/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/settings/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/site-images/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
@@ -64,6 +65,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/subscribe/login").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/subscribe/login-verify").permitAll()
 
+                .requestMatchers("/api/cart/**").hasAnyRole("SUBSCRIBER", "ADMIN", "USER")
+                .requestMatchers("/api/wishlist/**").hasAnyRole("SUBSCRIBER", "ADMIN", "USER")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

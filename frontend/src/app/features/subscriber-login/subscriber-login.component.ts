@@ -37,8 +37,8 @@ export class SubscriberLoginComponent implements OnInit {
         this.isLoading.set(false);
         this.success.set(res.success);
         this.message.set(res.message);
-        if (res.success && res.name && res.email) {
-          this.subscriberAuth.login(res.name, res.email);
+        if (res.success && res.name && res.email && res.token) {
+          this.subscriberAuth.login(res.name, res.email, res.token);
           // Redirect to home after a short delay
           setTimeout(() => this.router.navigate(['/']), 2000);
         }

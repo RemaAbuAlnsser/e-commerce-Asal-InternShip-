@@ -30,6 +30,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final ProductColorRepository productColorRepository;
     private final OrderMapper orderMapper;
+    private final EmailService emailService;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
@@ -88,7 +89,9 @@ public class OrderService {
         order.setTotal(computedSubtotal.add(order.getShippingCost()));
 
         Order savedOrder = orderRepository.save(order);
-        return toResponse(savedOrder);
+        OrderResponse response = toResponse(savedOrder);
+        emailService.sendOrderConfirmationEmail(response);
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -135,9 +138,45 @@ public class OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found with id: " + id));
 
+        String previousStatus = order.getStatus();
+
+        // Decrease stock when order moves to "confirmed" for the first time
+        if ("confirmed".equalsIgnoreCase(status) && !"confirmed".equalsIgnoreCase(previousStatus)) {
+            adjustStock(order, -1);
+        }
+
+        // Restore stock when order is cancelled after having been confirmed
+        if ("cancelled".equalsIgnoreCase(status) && "confirmed".equalsIgnoreCase(previousStatus)) {
+            adjustStock(order, +1);
+        }
+
         order.setStatus(status);
         Order updatedOrder = orderRepository.save(order);
-        return toResponse(updatedOrder);
+        OrderResponse response = toResponse(updatedOrder);
+        emailService.sendOrderStatusUpdateEmail(response);
+        return response;
+    }
+
+    /**
+     * Adjusts product and color stock by (quantity * multiplier).
+     * multiplier = -1 to decrease, +1 to restore.
+     */
+    private void adjustStock(Order order, int multiplier) {
+        for (OrderItem item : order.getItems()) {
+            int delta = item.getQuantity() * multiplier;
+
+            // Decrease/restore color-level stock if order had a specific color
+            if (item.getProductColor() != null) {
+                ProductColor color = item.getProductColor();
+                color.setStock(Math.max(0, color.getStock() + delta));
+                productColorRepository.save(color);
+            }
+
+            // Always adjust the product-level total stock
+            Product product = item.getProduct();
+            product.setStock(Math.max(0, product.getStock() + delta));
+            productRepository.save(product);
+        }
     }
 
     @Transactional

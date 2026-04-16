@@ -1,112 +1,108 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject, effect } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { SubscriberAuthService } from './subscriber-auth.service';
 
 export interface CartItem {
-  key: string;          // unique: productId + colorId
-  productId: number;
-  productName: string;
+  id:           number;
+  productId:    number;
+  productName:  string;
   productImage: string;
   categoryName: string;
-  price: number;
-  oldPrice?: number;
-  colorId?: number;
-  colorName?: string;
-  colorHex?: string;
-  quantity: number;
-  maxStock: number;
+  price:        number;
+  oldPrice?:    number;
+  colorId?:     number;
+  colorName?:   string;
+  colorHex?:    string;
+  quantity:     number;
+  maxStock:     number;
 }
 
-const SESSION_KEY = 'subscriber_session';
-const GUEST_KEY   = 'shop_cart_guest';
-
-function resolveKey(): string {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (raw) {
-      const session = JSON.parse(raw);
-      if (session?.email) return `shop_cart_${session.email}`;
-    }
-  } catch {}
-  return GUEST_KEY;
-}
+const BASE = 'http://localhost:3000/api/cart';
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
-  private userKey = resolveKey();
+  private http = inject(HttpClient);
+  private auth = inject(SubscriberAuthService);
 
-  private readonly _items = signal<CartItem[]>(this.load());
+  private readonly _items   = signal<CartItem[]>([]);
+  private readonly _loading = signal(false);
 
-  readonly items   = this._items.asReadonly();
-  readonly count   = computed(() => this._items().reduce((s, i) => s + i.quantity, 0));
-  readonly total   = computed(() => this._items().reduce((s, i) => s + i.price * i.quantity, 0));
-  readonly isEmpty = computed(() => this._items().length === 0);
+  readonly items    = this._items.asReadonly();
+  readonly loading  = this._loading.asReadonly();
+  readonly count    = computed(() => this._items().reduce((s, i) => s + i.quantity, 0));
+  readonly total    = computed(() => this._items().reduce((s, i) => s + i.price * i.quantity, 0));
+  readonly isEmpty  = computed(() => this._items().length === 0);
+  readonly isOpen   = signal(false);
 
-  // ── open/close state ────────────────────────────────────────────────────
-  readonly isOpen = signal(false);
-  open()  { this.isOpen.set(true); }
+  constructor() {
+    // Auto-load when the subscriber logs in; clear when they log out
+    effect(() => {
+      if (this.auth.isLoggedIn()) {
+        this.loadFromBackend();
+      } else {
+        this._items.set([]);
+        this._loading.set(false);
+        this.isOpen.set(false);
+      }
+    }, { allowSignalWrites: true });
+  }
+
+  open()  { this.isOpen.set(true);  }
   close() { this.isOpen.set(false); }
 
-  // ── Switch to a logged-in user's cart ───────────────────────────────────
-  setUserKey(email: string): void {
-    this.userKey = `shop_cart_${email}`;
-    this._items.set(this.load());
-  }
-
-  // ── Clear cart and switch back to guest (called on logout) ──────────────
-  clearAndReset(): void {
-    try { localStorage.removeItem(this.userKey); } catch {}
-    this.userKey = GUEST_KEY;
-    this._items.set([]);
-    this.close();
-  }
-
-  // ── mutations ────────────────────────────────────────────────────────────
-
-  add(item: Omit<CartItem, 'key' | 'quantity'>, qty = 1): void {
-    const key = `${item.productId}_${item.colorId ?? 0}`;
-    const cur  = this._items();
-    const idx  = cur.findIndex(i => i.key === key);
-
-    if (idx > -1) {
-      const updated = [...cur];
-      updated[idx] = {
-        ...updated[idx],
-        quantity: Math.min(updated[idx].quantity + qty, updated[idx].maxStock)
-      };
-      this._items.set(updated);
-    } else {
-      this._items.set([...cur, { ...item, key, quantity: qty }]);
-    }
-    this.save();
+  // ── Add / increment ──────────────────────────────────────────────────────
+  add(item: Omit<CartItem, 'id' | 'quantity'>, qty = 1): void {
+    if (!this.auth.isLoggedIn()) { this.open(); return; } // drawer shows sign-in hint
     this.open();
+    this.http.post<CartItem>(BASE, { ...item, quantity: qty }, { headers: this.headers() })
+      .subscribe({
+        next: saved => {
+          const cur = this._items();
+          const idx = cur.findIndex(i =>
+            i.productId === saved.productId && (i.colorId ?? null) === (saved.colorId ?? null)
+          );
+          if (idx > -1) {
+            const updated = [...cur]; updated[idx] = saved;
+            this._items.set(updated);
+          } else {
+            this._items.set([...cur, saved]);
+          }
+        }
+      });
   }
 
-  updateQty(key: string, qty: number): void {
+  // ── Update quantity ──────────────────────────────────────────────────────
+  updateQty(id: number, qty: number): void {
+    // Optimistic
     this._items.update(items =>
-      items.map(i => i.key === key ? { ...i, quantity: Math.max(1, Math.min(qty, i.maxStock)) } : i)
+      items.map(i => i.id === id ? { ...i, quantity: Math.max(1, Math.min(qty, i.maxStock)) } : i)
     );
-    this.save();
+    this.http.put<CartItem>(`${BASE}/${id}`, { quantity: qty }, { headers: this.headers() })
+      .subscribe({ next: saved => this._items.update(items => items.map(i => i.id === saved.id ? saved : i)) });
   }
 
-  remove(key: string): void {
-    this._items.update(items => items.filter(i => i.key !== key));
-    this.save();
+  // ── Remove ───────────────────────────────────────────────────────────────
+  remove(id: number): void {
+    this._items.update(items => items.filter(i => i.id !== id));
+    this.http.delete(`${BASE}/${id}`, { headers: this.headers() }).subscribe();
   }
 
+  // ── Clear ────────────────────────────────────────────────────────────────
   clear(): void {
     this._items.set([]);
-    this.save();
+    this.http.delete(BASE, { headers: this.headers() }).subscribe();
   }
 
-  // ── persistence ──────────────────────────────────────────────────────────
-
-  private save(): void {
-    try { localStorage.setItem(this.userKey, JSON.stringify(this._items())); } catch {}
+  // ── Internal ─────────────────────────────────────────────────────────────
+  private loadFromBackend(): void {
+    this._loading.set(true);
+    this.http.get<CartItem[]>(BASE, { headers: this.headers() }).subscribe({
+      next:  items => { this._items.set(items); this._loading.set(false); },
+      error: ()    => { this._items.set([]);    this._loading.set(false); }
+    });
   }
 
-  private load(): CartItem[] {
-    try {
-      const raw = localStorage.getItem(this.userKey);
-      return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+  private headers(): HttpHeaders {
+    return new HttpHeaders({ Authorization: `Bearer ${this.auth.token()}` });
   }
 }

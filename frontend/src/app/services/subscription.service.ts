@@ -5,8 +5,9 @@ import { Observable } from 'rxjs';
 export interface SubscribeResponse {
   success: boolean;
   message: string;
-  name?: string;
-  email?: string;
+  name?:   string;
+  email?:  string;
+  token?:  string;
 }
 
 @Injectable({ providedIn: 'root' })

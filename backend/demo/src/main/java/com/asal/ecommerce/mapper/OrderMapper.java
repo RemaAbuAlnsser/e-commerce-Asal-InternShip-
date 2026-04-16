@@ -21,6 +21,7 @@ public interface OrderMapper {
     @Mapping(target = "total", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "customerEmail", source = "request.customerEmail")
     Order toEntity(OrderRequest request, User user);
 
     // ===============================

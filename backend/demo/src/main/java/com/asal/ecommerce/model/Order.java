@@ -38,6 +38,9 @@ public class Order {
     @Column(name = "customer_address", nullable = false, columnDefinition = "TEXT")
     private String customerAddress;
 
+    @Column(name = "customer_email")
+    private String customerEmail;
+
     @Column(name = "shipping_method", nullable = false, length = 100)
     private String shippingMethod;
 

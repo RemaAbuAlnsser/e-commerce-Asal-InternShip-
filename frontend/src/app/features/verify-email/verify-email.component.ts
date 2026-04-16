@@ -37,8 +37,8 @@ export class VerifyEmailComponent implements OnInit {
         this.success.set(res.success);
         this.message.set(res.message);
         // Save session so the header shows the subscriber's name
-        if (res.success && res.name && res.email) {
-          this.subscriberAuth.login(res.name, res.email);
+        if (res.success && res.name && res.email && res.token) {
+          this.subscriberAuth.login(res.name, res.email, res.token);
         }
       },
       error: () => {

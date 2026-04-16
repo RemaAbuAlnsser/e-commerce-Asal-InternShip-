@@ -40,6 +40,8 @@ public class OrderRequest {
     @NotBlank(message = "Payment method is required")
     private String paymentMethod;
 
+    private String customerEmail; // nullable - for order confirmation emails
+
     private String status; // optional, default pending
 
     @Valid

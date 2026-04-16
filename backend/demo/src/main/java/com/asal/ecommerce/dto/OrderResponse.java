@@ -20,6 +20,7 @@ public class OrderResponse {
     private String customerPhone;
     private String customerCity;
     private String customerAddress;
+    private String customerEmail;
 
     private String shippingMethod;
     private BigDecimal shippingCost;

@@ -1,25 +1,34 @@
 package com.asal.ecommerce.dto;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class SubscribeResponse {
     private boolean success;
     private String message;
     private String name;
     private String email;
+    private String token;
 
-    // Constructor for subscribe (no user data)
-    public SubscribeResponse(boolean success, String message) {
-        this.success = success;
-        this.message = message;
+    /** For simple success/error with no user data (e.g. subscribe request) */
+    public static SubscribeResponse simple(boolean success, String message) {
+        SubscribeResponse r = new SubscribeResponse();
+        r.success = success;
+        r.message = message;
+        return r;
     }
 
-    // Constructor for verify (includes user data)
-    public SubscribeResponse(boolean success, String message, String name, String email) {
-        this.success = success;
-        this.message = message;
-        this.name = name;
-        this.email = email;
+    /** For login/verify — includes JWT so the client can authenticate */
+    public static SubscribeResponse withUser(boolean success, String message,
+                                             String name, String email, String token) {
+        SubscribeResponse r = new SubscribeResponse();
+        r.success = success;
+        r.message = message;
+        r.name    = name;
+        r.email   = email;
+        r.token   = token;
+        return r;
     }
 }

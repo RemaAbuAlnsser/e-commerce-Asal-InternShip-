@@ -110,6 +110,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/subscriber-login/subscriber-login.component').then(m => m.SubscriberLoginComponent)
   },
   {
+    path: 'checkout',
+    loadComponent: () => import('./features/checkout/checkout.component').then(m => m.CheckoutComponent)
+  },
+  {
     path: '',
     loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent)
   },
