@@ -321,6 +321,97 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
 .search-submit:active { transform: translateY(-50%) scale(0.91); }
 .search-submit svg    { width: 16px; height: 16px; }
 
+/* ── Search suggestions dropdown ── */
+.suggestions-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-xl);
+  z-index: 600;
+  overflow: hidden;
+  animation: drop-in var(--dur-mid) var(--ease) both;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+  font-family: inherit;
+}
+
+.suggestion-item:hover { background: var(--c-surface); }
+
+.suggestion-img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+  background: var(--c-surface-2);
+}
+
+.suggestion-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.suggestion-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-meta {
+  font-size: 0.75rem;
+  color: var(--c-text-2);
+}
+
+.suggestion-arrow {
+  width: 14px;
+  height: 14px;
+  color: var(--c-text-3);
+  flex-shrink: 0;
+}
+
+.suggestion-view-all {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-top: 1px solid var(--c-border);
+  background: var(--c-surface);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--c-primary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--dur-fast) var(--ease);
+  text-align: left;
+  gap: 0.5rem;
+}
+
+.suggestion-view-all:hover { background: var(--c-primary-lt); }
+.suggestion-view-all svg   { width: 13px; height: 13px; flex-shrink: 0; }
+
 /* ── Header icon buttons ── */
 .header-icons {
   display: flex;

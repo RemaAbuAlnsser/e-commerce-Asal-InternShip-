@@ -102,6 +102,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/verify-email/verify-email.component').then(m => m.VerifyEmailComponent)
   },
   {
+    path: 'search',
+    loadComponent: () => import('./features/search/search.component').then(m => m.SearchComponent)
+  },
+  {
     path: 'wishlist',
     loadComponent: () => import('./features/wishlist/wishlist.component').then(m => m.WishlistComponent)
   },

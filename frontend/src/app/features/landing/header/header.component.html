@@ -80,6 +80,7 @@
           class="search-input"
           placeholder="Search products, brands, categories…"
           [(ngModel)]="searchQuery"
+          (input)="onSearchInput()"
           (keydown.enter)="onSearch()"
           aria-label="Search"
           autocomplete="off"
@@ -90,6 +91,33 @@
             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </button>
+
+        <!-- Live suggestions dropdown -->
+        @if (suggestionsOpen()) {
+          <div class="suggestions-dropdown" role="listbox" aria-label="Search suggestions">
+            @for (item of suggestions(); track item.id) {
+              <button class="suggestion-item" type="button" role="option"
+                (click)="goToSuggestion(item)">
+                <img class="suggestion-img" [src]="getSuggestionImage(item)" [alt]="item.name" loading="lazy"/>
+                <div class="suggestion-text">
+                  <span class="suggestion-name">{{ item.name }}</span>
+                  <span class="suggestion-meta">{{ item.categoryName }} · ${{ item.price }}</span>
+                </div>
+                <svg class="suggestion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </button>
+            }
+            <button class="suggestion-view-all" type="button" (click)="onSearch()">
+              View all results for "{{ searchQuery }}"
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+        }
       </div>
 
       <!-- ── Right action icons ── -->
@@ -242,6 +270,7 @@
             class="search-input"
             placeholder="Search products…"
             [(ngModel)]="searchQuery"
+            (input)="onSearchInput()"
             (keydown.enter)="onSearch()"
             aria-label="Search"
             autocomplete="off"

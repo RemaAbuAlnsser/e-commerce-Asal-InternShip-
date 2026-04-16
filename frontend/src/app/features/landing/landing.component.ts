@@ -15,6 +15,7 @@ import { SubscriptionService } from '../../services/subscription.service';
 import { CartService } from '../../services/cart.service';
 import { WishlistService } from '../../services/wishlist.service';
 import { environment } from '../../../environments/environment';
+import { InteractiveImageAccordionComponent } from '../../components/ui/interactive-image-accordion.component';
 
 interface CategorySection {
   category: CategoryOption;
@@ -26,7 +27,7 @@ interface CategorySection {
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, FormsModule, HeaderComponent, RouterLink],
+  imports: [CommonModule, FormsModule, HeaderComponent, RouterLink, InteractiveImageAccordionComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.css'
 })

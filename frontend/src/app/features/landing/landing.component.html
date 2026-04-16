@@ -2,34 +2,10 @@
 
   <app-header></app-header>
 
-  <!-- ── Full-width Hero ── -->
-  <section class="hero">
-
-    @if (siteImages().length > 0) {
-      <!-- Single image shown at a time — instant switch every 3s, no animation -->
-      <img
-        [src]="getImageUrl(siteImages()[activeIndex()].imageUrl)"
-        [attr.alt]="'Store image ' + (activeIndex() + 1)"
-        class="hero-img"
-      />
-      <div class="slide-overlay"></div>
-
-      @if (siteImages().length > 1) {
-        <div class="slider-dots">
-          @for (img of siteImages(); track img.id; let i = $index) {
-            <button class="dot" [class.active]="i === activeIndex()" (click)="goToSlide(i)" [attr.aria-label]="'Slide ' + (i + 1)"></button>
-          }
-        </div>
-      }
-
-    } @else {
-      <div class="hero-fallback"></div>
-    }
-
-    <!-- Text on top -->
-
-
-  </section>
+  <!-- ── Image Accordion ── -->
+  @if (siteImages().length > 0) {
+    <app-interactive-image-accordion [images]="siteImages()" />
+  }
 
   <!-- ── Products by Category — each section loads when scrolled into view ── -->
   <section class="shop-section">

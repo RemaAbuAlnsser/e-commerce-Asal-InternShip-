@@ -10,7 +10,7 @@ import {
   PLATFORM_ID
 } from '@angular/core';
 import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SiteConfigService } from '../../../services/site-config.service';
 import { AnnouncementService } from '../../../services/announcement.service';
@@ -19,6 +19,7 @@ import { CartService } from '../../../services/cart.service';
 import { WishlistService } from '../../../services/wishlist.service';
 import { SubscriberAuthService } from '../../../services/subscriber-auth.service';
 import { SubscriptionService } from '../../../services/subscription.service';
+import { ProductResponse } from '../../../services/product.model';
 
 export interface NavLink {
   label: string;
@@ -62,6 +63,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
   readonly activeAnnouncements = this.announcementService.activeAnnouncements;
   readonly hasActiveAnnouncements = this.announcementService.hasActive;
 
+  /* ── Router ─────────────────────────────────── */
+  private router = inject(Router);
+
   /* ── Product service (for categories) ──────── */
   private productService = inject(ProductService);
 
@@ -84,6 +88,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   readonly isSubscriberLoggedIn = this.subscriberAuth.isLoggedIn;
 
   readonly accountMenuOpen  = signal(false);
+
+  /* ── Search suggestions ──────────────────────────────── */
+  readonly suggestions       = signal<ProductResponse[]>([]);
+  readonly suggestionsOpen   = signal(false);
+  private  suggestTimer?: ReturnType<typeof setTimeout>;
 
   // ── Sign-in form state ────────────────────────
   private subscriptionService = inject(SubscriptionService);
@@ -194,7 +203,41 @@ export class HeaderComponent implements OnInit, OnDestroy {
   /* ── Search ──────────────────────────────────── */
   onSearch(): void {
     const q = this.searchQuery.trim();
-    if (q) console.log('Search:', q);
+    if (!q) return;
+    this.closeSuggestions();
+    this.mobileSearchOpen.set(false);
+    this.router.navigate(['/search'], { queryParams: { q } });
+  }
+
+  onSearchInput(): void {
+    const q = this.searchQuery.trim();
+    clearTimeout(this.suggestTimer);
+    if (!q || q.length < 2) { this.suggestions.set([]); this.suggestionsOpen.set(false); return; }
+    this.suggestTimer = setTimeout(() => {
+      this.productService.search(q, 0, 5).subscribe({
+        next: res => {
+          this.suggestions.set(res.content ?? []);
+          this.suggestionsOpen.set((res.content ?? []).length > 0);
+        },
+        error: () => { this.suggestions.set([]); this.suggestionsOpen.set(false); }
+      });
+    }, 280);
+  }
+
+  goToSuggestion(p: ProductResponse): void {
+    this.closeSuggestions();
+    this.searchQuery = '';
+    this.router.navigate(['/product', p.id]);
+  }
+
+  closeSuggestions(): void {
+    this.suggestionsOpen.set(false);
+    this.suggestions.set([]);
+    clearTimeout(this.suggestTimer);
+  }
+
+  getSuggestionImage(p: ProductResponse): string {
+    return this.productService.resolveImageUrl(p.imageUrl ?? '');
   }
 
   /* ── Global listeners ────────────────────────── */
@@ -210,6 +253,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (!(e.target as HTMLElement).closest('.account-menu-wrap')) {
       this.accountMenuOpen.set(false);
     }
+    // Close search suggestions if clicking outside
+    if (!(e.target as HTMLElement).closest('.search-bar')) {
+      this.closeSuggestions();
+    }
   }
 
   @HostListener('document:keydown.escape')
@@ -221,5 +268,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.isBrowser) this.doc.body.classList.remove('no-scroll');
+    clearTimeout(this.suggestTimer);
   }
 }
