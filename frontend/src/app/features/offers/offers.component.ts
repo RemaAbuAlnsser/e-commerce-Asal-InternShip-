@@ -1,10 +1,12 @@
-import { Component, OnInit, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, signal, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HeaderComponent } from '../landing/header/header.component';
 import { ProductService } from '../../services/product.service';
 import { ProductResponse, CategoryOption } from '../../services/product.model';
+import { CartService } from '../../services/cart.service';
+import { WishlistService } from '../../services/wishlist.service';
 
 @Component({
   selector: 'app-offers',
@@ -19,6 +21,9 @@ export class OffersComponent implements OnInit {
   readonly selectedCategory = signal<number | null>(null);
   readonly isLoading = signal(true);
   readonly filteredProducts = signal<ProductResponse[]>([]);
+
+  private cartService     = inject(CartService);
+  private wishlistService = inject(WishlistService);
 
   constructor(private productService: ProductService) {
     // Initialize with empty arrays to prevent iterator errors
@@ -109,14 +114,34 @@ export class OffersComponent implements OnInit {
     // لا نحتاج لإعادة تحميل البيانات، الـ effect سيتولى الفلترة
   }
 
-  addToCart(product: ProductResponse) {
-    console.log('Added to cart:', product);
-    // Implement add to cart functionality
+  addToCart(product: ProductResponse, e: Event): void {
+    e.stopPropagation();
+    this.cartService.add({
+      productId:    product.id,
+      productName:  product.name,
+      productImage: this.getProductImage(product),
+      categoryName: product.categoryName ?? '',
+      price:        product.price,
+      oldPrice:     product.oldPrice ?? undefined,
+      maxStock:     product.totalStock ?? 0
+    });
   }
 
-  addToWishlist(product: ProductResponse) {
-    console.log('Added to wishlist:', product);
-    // Implement add to wishlist functionality
+  toggleWishlist(product: ProductResponse, e: Event): void {
+    e.stopPropagation();
+    this.wishlistService.toggle({
+      productId:    product.id,
+      productName:  product.name,
+      productImage: this.getProductImage(product),
+      categoryName: product.categoryName ?? '',
+      price:        product.price,
+      oldPrice:     product.oldPrice ?? undefined,
+      totalStock:   product.totalStock ?? 0
+    });
+  }
+
+  isInWishlist(product: ProductResponse): boolean {
+    return this.wishlistService.isInWishlist(product.id);
   }
 
   getProductImage(product: ProductResponse): string {

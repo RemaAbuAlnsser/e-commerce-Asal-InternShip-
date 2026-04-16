@@ -1,0 +1,37 @@
+<div class="login-page">
+  <div class="login-card">
+
+    @if (isLoading()) {
+      <div class="state-block">
+        <div class="spinner"></div>
+        <p class="state-msg">Signing you in…</p>
+      </div>
+    } @else if (success()) {
+      <div class="state-block">
+        <div class="icon-circle icon-circle--green">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <h2 class="state-title">Welcome back!</h2>
+        <p class="state-msg">{{ message() }}</p>
+        <p class="state-sub">Redirecting you to the store…</p>
+        <a routerLink="/" class="btn-home">Go to Store →</a>
+      </div>
+    } @else {
+      <div class="state-block">
+        <div class="icon-circle icon-circle--red">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </div>
+        <h2 class="state-title">Sign-in failed</h2>
+        <p class="state-msg">{{ message() }}</p>
+        <p class="state-sub">The link may have expired or already been used.</p>
+        <a routerLink="/" class="btn-home">Back to Store</a>
+      </div>
+    }
+
+  </div>
+</div>

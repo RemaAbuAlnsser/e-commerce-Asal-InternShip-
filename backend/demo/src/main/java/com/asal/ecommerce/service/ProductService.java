@@ -29,6 +29,7 @@ public class ProductService {
     private final SubcategoryRepository       subcategoryRepo;
     private final BrandRepository             brandRepo;
     private final ImageUploadService          imageUploadService;
+    private final ProductNotificationService  notificationService;
 
     // =========================================================================
     // ADMIN METHODS
@@ -118,7 +119,18 @@ public class ProductService {
         // Sync total stock from color list
         product.setStock(product.getColors().stream().mapToInt(ProductColor::getStock).sum());
 
-        return mapToResponse(productRepo.save(product));
+        Product saved = productRepo.save(product);
+
+        // Notify verified subscribers asynchronously (never blocks the response)
+        notificationService.notifySubscribers(
+                saved.getName(),
+                category.getName(),
+                saved.getPrice().toPlainString(),
+                saved.getImageUrl(),
+                saved.getId()
+        );
+
+        return mapToResponse(saved);
     }
 
     // Admin — list all (no pagination)

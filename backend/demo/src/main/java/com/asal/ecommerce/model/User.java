@@ -40,4 +40,13 @@ public class User {
     
     @Column(name = "google_id")
     private String googleId; // For Google OAuth users
+
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
+    @Column(name = "verification_token")
+    private String verificationToken;
+
+    @Column(name = "login_token")
+    private String loginToken;
 }

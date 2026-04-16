@@ -27,14 +27,7 @@
     }
 
     <!-- Text on top -->
-    <div class="hero-content">
-      <h1 class="hero-title">Welcome to Our Store</h1>
-      <p class="hero-subtitle">Discover amazing products at the best prices</p>
-      <div class="hero-actions">
-        <button class="btn-primary">Shop Now</button>
-        <button class="btn-secondary">Learn More</button>
-      </div>
-    </div>
+
 
   </section>
 
@@ -114,14 +107,14 @@
                       }
                     </div>
 
-                    <button class="wishlist-btn" title="Add to Wishlist" (click)="$event.stopPropagation()">
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <button class="wishlist-btn" title="Add to Wishlist" (click)="toggleWishlist(product, $event)" [class.wishlisted]="isInWishlist(product)">
+                      <svg width="17" height="17" viewBox="0 0 24 24" [attr.fill]="isInWishlist(product) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2.2">
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                       </svg>
                     </button>
 
                     <div class="image-overlay" (click)="$event.stopPropagation()">
-                      <button class="quick-add-btn" [disabled]="product.totalStock === 0">
+                      <button class="quick-add-btn" [disabled]="product.totalStock === 0" (click)="addToCart(product, $event)">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                           <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
                           <line x1="3" y1="6" x2="21" y2="6"/>
@@ -155,7 +148,7 @@
                           <span class="out-stock">Sold Out</span>
                         }
                       </div>
-                      <button class="add-to-cart-btn" [disabled]="product.totalStock === 0" (click)="$event.stopPropagation()">
+                      <button class="add-to-cart-btn" [disabled]="product.totalStock === 0" (click)="addToCart(product, $event)">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                           <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
                           <line x1="3" y1="6" x2="21" y2="6"/>
@@ -177,38 +170,44 @@
     </div>
   </section>
 
-  <!-- Features Section -->
-  <section class="features">
-    <div class="container">
-      <h2>Why Choose Us</h2>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🚚</div>
-          <h3>Free Shipping</h3>
-          <p>Free shipping on orders over $50</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔄</div>
-          <h3>Easy Returns</h3>
-          <p>30-day hassle-free returns</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🛡️</div>
-          <h3>Secure Payment</h3>
-          <p>Your payment information is safe</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📞</div>
-          <h3>24/7 Support</h3>
-          <p>Customer support available anytime</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- Footer -->
   <footer id="footer" class="footer">
     <div class="container">
+
+      <!-- Newsletter band inside footer -->
+      <div class="footer-newsletter">
+        <div class="footer-newsletter-text">
+          <h3>Stay in the Loop</h3>
+          <p>New arrivals, exclusive deals, and style tips — straight to your inbox.</p>
+        </div>
+        <form class="footer-newsletter-form" (ngSubmit)="onSubscribe()">
+          <div class="footer-input-group">
+            <input
+              type="email"
+              name="subscribeEmail"
+              [(ngModel)]="subscribeEmail"
+              placeholder="Your email address"
+              required
+              [disabled]="subscribeStatus() === 'loading' || subscribeStatus() === 'success'"
+            />
+            <button type="submit" [disabled]="subscribeStatus() === 'loading' || subscribeStatus() === 'success'">
+              @if (subscribeStatus() === 'loading') {
+                <span class="btn-spinner"></span>
+              } @else {
+                Subscribe
+              }
+            </button>
+          </div>
+          @if (subscribeStatus() === 'success') {
+            <p class="sub-feedback success">{{ subscribeMsg() }}</p>
+          } @else if (subscribeStatus() === 'error') {
+            <p class="sub-feedback error">{{ subscribeMsg() }}</p>
+          }
+        </form>
+      </div>
+
+      <div class="footer-divider"></div>
+
       <div class="footer-content">
         <!-- Site Info Section -->
         <div class="footer-section">

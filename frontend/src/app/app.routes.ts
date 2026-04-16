@@ -98,6 +98,18 @@ export const routes: Routes = [
     loadComponent: () => import('./features/categories/categories.component').then(m => m.CategoriesComponent)
   },
   {
+    path: 'verify-email',
+    loadComponent: () => import('./features/verify-email/verify-email.component').then(m => m.VerifyEmailComponent)
+  },
+  {
+    path: 'wishlist',
+    loadComponent: () => import('./features/wishlist/wishlist.component').then(m => m.WishlistComponent)
+  },
+  {
+    path: 'subscriber-login',
+    loadComponent: () => import('./features/subscriber-login/subscriber-login.component').then(m => m.SubscriberLoginComponent)
+  },
+  {
     path: '',
     loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent)
   },

@@ -15,6 +15,10 @@ import { FormsModule } from '@angular/forms';
 import { SiteConfigService } from '../../../services/site-config.service';
 import { AnnouncementService } from '../../../services/announcement.service';
 import { ProductService } from '../../../services/product.service';
+import { CartService } from '../../../services/cart.service';
+import { WishlistService } from '../../../services/wishlist.service';
+import { SubscriberAuthService } from '../../../services/subscriber-auth.service';
+import { SubscriptionService } from '../../../services/subscription.service';
 
 export interface NavLink {
   label: string;
@@ -71,8 +75,54 @@ export class HeaderComponent implements OnInit, OnDestroy {
   searchQuery = '';
 
   /* ── Counts ──────────────────────────────────── */
-  readonly cartCount     = signal(3);
-  readonly wishlistCount = signal(1);
+  readonly cartService      = inject(CartService);
+  readonly wishlistService  = inject(WishlistService);
+  readonly subscriberAuth   = inject(SubscriberAuthService);
+  readonly cartCount        = this.cartService.count;
+  readonly wishlistCount    = this.wishlistService.count;
+  readonly subscriberName   = this.subscriberAuth.name;
+  readonly isSubscriberLoggedIn = this.subscriberAuth.isLoggedIn;
+
+  readonly accountMenuOpen  = signal(false);
+
+  // ── Sign-in form state ────────────────────────
+  private subscriptionService = inject(SubscriptionService);
+  signinEmail  = '';
+  readonly signinStatus = signal<'idle' | 'loading' | 'sent' | 'error'>('idle');
+  readonly signinMsg    = signal('');
+
+  openCart(): void { this.cartService.open(); }
+
+  toggleAccountMenu(e: Event): void {
+    e.stopPropagation();
+    this.accountMenuOpen.update(v => !v);
+    // Reset form when opening
+    if (this.accountMenuOpen()) {
+      this.signinStatus.set('idle');
+      this.signinEmail = '';
+    }
+  }
+
+  logout(): void {
+    this.subscriberAuth.logout();
+    this.accountMenuOpen.set(false);
+  }
+
+  requestSignIn(): void {
+    const email = this.signinEmail.trim();
+    if (!email) return;
+    this.signinStatus.set('loading');
+    this.subscriptionService.requestLogin(email).subscribe({
+      next: () => {
+        this.signinStatus.set('sent');
+        this.signinMsg.set('Check your inbox — we sent you a sign-in link!');
+      },
+      error: () => {
+        this.signinStatus.set('error');
+        this.signinMsg.set('Something went wrong. Please try again.');
+      }
+    });
+  }
 
   /* ── Navigation data ─────────────────────────── */
   readonly navLinks: NavLink[] = [
@@ -155,6 +205,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     const dd  = this.catDropdown?.nativeElement;
     if (btn && dd && !btn.contains(t) && !dd.contains(t)) {
       this.catOpen.set(false);
+    }
+    // Close account menu if clicking outside
+    if (!(e.target as HTMLElement).closest('.account-menu-wrap')) {
+      this.accountMenuOpen.set(false);
     }
   }
 

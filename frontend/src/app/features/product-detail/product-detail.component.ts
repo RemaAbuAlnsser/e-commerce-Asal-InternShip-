@@ -8,6 +8,8 @@ import {
   ProductColorResponse,
   ProductColorImageResponse
 } from '../../services/product.model';
+import { CartService } from '../../services/cart.service';
+import { WishlistService } from '../../services/wishlist.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -18,9 +20,11 @@ import {
 })
 export class ProductDetailComponent implements OnInit {
 
-  private route          = inject(ActivatedRoute);
-  private router         = inject(Router);
-  private productService = inject(ProductService);
+  private route           = inject(ActivatedRoute);
+  private router          = inject(Router);
+  private productService  = inject(ProductService);
+  private cartService     = inject(CartService);
+  private wishlistService = inject(WishlistService);
 
   // ── State ────────────────────────────────────────────────────────────────────
   readonly product       = signal<ProductResponse | null>(null);
@@ -143,24 +147,42 @@ export class ProductDetailComponent implements OnInit {
     this.quantity.update(q => Math.max(q - 1, 1));
   }
 
-  addToCart(product?: ProductResponse)    { 
-    if (product) {
-      /* TODO: wire to cart service */ 
-      console.log('Add to cart (related)', product.id, product.name); 
-    } else {
-      /* TODO: wire to cart service */ 
-      console.log('Add to cart', this.product()?.id, this.selectedColor()?.id, this.quantity()); 
-    }
+  addToCart(relatedProduct?: ProductResponse): void {
+    const p = relatedProduct ?? this.product();
+    if (!p) return;
+    const color = relatedProduct ? null : this.selectedColor();
+    const qty   = relatedProduct ? 1 : this.quantity();
+    this.cartService.add({
+      productId:    p.id,
+      productName:  p.name,
+      productImage: this.img(p.imageUrl),
+      categoryName: p.categoryName ?? '',
+      price:        p.price,
+      oldPrice:     p.oldPrice ?? undefined,
+      colorId:      color?.id,
+      colorName:    color?.colorName,
+      colorHex:     color?.colorHex,
+      maxStock:     relatedProduct ? (p.totalStock ?? 0) : this.availableStock()
+    }, qty);
   }
-  
-  addToWishlist(product?: ProductResponse){ 
-    if (product) {
-      /* TODO: wire to wishlist service */ 
-      console.log('Wishlist (related)', product.id, product.name); 
-    } else {
-      /* TODO: wire to wishlist service */ 
-      console.log('Wishlist', this.product()?.id); 
-    }
+
+  toggleWishlist(relatedProduct?: ProductResponse): void {
+    const p = relatedProduct ?? this.product();
+    if (!p) return;
+    this.wishlistService.toggle({
+      productId:    p.id,
+      productName:  p.name,
+      productImage: this.img(p.imageUrl),
+      categoryName: p.categoryName ?? '',
+      price:        p.price,
+      oldPrice:     p.oldPrice ?? undefined,
+      totalStock:   p.totalStock ?? 0
+    });
+  }
+
+  isInWishlist(product?: ProductResponse): boolean {
+    const id = product?.id ?? this.product()?.id;
+    return id != null ? this.wishlistService.isInWishlist(id) : false;
   }
 
   goBack() { window.history.back(); }

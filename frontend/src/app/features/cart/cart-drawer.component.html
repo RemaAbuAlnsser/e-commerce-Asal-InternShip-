@@ -1,0 +1,93 @@
+<!-- Backdrop -->
+@if (cart.isOpen()) {
+  <div class="cart-backdrop" (click)="cart.close()"></div>
+}
+
+<!-- Drawer -->
+<div class="cart-drawer" [class.open]="cart.isOpen()">
+
+  <!-- Header -->
+  <div class="drawer-header">
+    <div class="drawer-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+      <span>Your Cart</span>
+      @if (cart.count() > 0) {
+        <span class="drawer-badge">{{ cart.count() }}</span>
+      }
+    </div>
+    <button class="drawer-close" (click)="cart.close()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Empty state -->
+  @if (cart.isEmpty()) {
+    <div class="cart-empty">
+      <div class="empty-icon">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>
+      </div>
+      <h3>Your cart is empty</h3>
+      <p>Add some products to get started</p>
+      <button class="btn-continue" (click)="cart.close()">Continue Shopping</button>
+    </div>
+  } @else {
+
+    <!-- Items -->
+    <div class="cart-items">
+      @for (item of cart.items(); track item.key) {
+        <div class="cart-item">
+          <div class="item-image">
+            <img [src]="item.productImage" [alt]="item.productName" loading="lazy">
+          </div>
+          <div class="item-details">
+            <p class="item-category">{{ item.categoryName }}</p>
+            <h4 class="item-name">{{ item.productName }}</h4>
+            @if (item.colorName) {
+              <div class="item-color">
+                <span class="color-dot" [style.background]="item.colorHex"></span>
+                <span>{{ item.colorName }}</span>
+              </div>
+            }
+            <div class="item-bottom">
+              <div class="qty-control">
+                <button class="qty-btn" (click)="cart.updateQty(item.key, item.quantity - 1)" [disabled]="item.quantity <= 1">−</button>
+                <span class="qty-val">{{ item.quantity }}</span>
+                <button class="qty-btn" (click)="cart.updateQty(item.key, item.quantity + 1)" [disabled]="item.quantity >= item.maxStock">+</button>
+              </div>
+              <span class="item-price">${{ (item.price * item.quantity).toFixed(2) }}</span>
+            </div>
+          </div>
+          <button class="item-remove" (click)="cart.remove(item.key)" title="Remove">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- Footer -->
+    <div class="cart-footer">
+      <div class="subtotal-row">
+        <span>Subtotal</span>
+        <span class="subtotal-amount">${{ cart.total().toFixed(2) }}</span>
+      </div>
+      <p class="shipping-note">Shipping & taxes calculated at checkout</p>
+      <button class="btn-checkout" (click)="cart.close()" routerLink="/checkout">
+        Checkout →
+      </button>
+      <button class="btn-clear" (click)="cart.clear()">Clear Cart</button>
+    </div>
+  }
+
+</div>

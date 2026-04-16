@@ -1,10 +1,12 @@
-import { Component, OnInit, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, signal, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HeaderComponent } from '../landing/header/header.component';
 import { ProductService } from '../../services/product.service';
 import { ProductResponse, CategoryOption } from '../../services/product.model';
+import { CartService } from '../../services/cart.service';
+import { WishlistService } from '../../services/wishlist.service';
 
 @Component({
   selector: 'app-new-arrivals',
@@ -20,111 +22,86 @@ export class NewArrivalsComponent implements OnInit {
   readonly isLoading = signal(true);
   readonly filteredProducts = signal<ProductResponse[]>([]);
 
+  private cartService     = inject(CartService);
+  private wishlistService = inject(WishlistService);
+
   constructor(private productService: ProductService) {
-    // Simplified effect with proper array handling
     effect(() => {
       const allProducts = this.products();
-      const categoryId = this.selectedCategory();
-      
-      // Ensure we always work with a valid array
+      const categoryId  = this.selectedCategory();
       const safeProducts = Array.isArray(allProducts) ? allProducts : [];
-      
-      let filtered: ProductResponse[];
-      
-      if (categoryId === null) {
-        filtered = [...safeProducts];
-      } else {
-        filtered = safeProducts.filter(product => 
-          product && product.categoryId === categoryId
-        );
-      }
-      
-      this.filteredProducts.set(filtered);
+      this.filteredProducts.set(
+        categoryId === null ? [...safeProducts] : safeProducts.filter(p => p && p.categoryId === categoryId)
+      );
     }, { allowSignalWrites: true });
   }
 
   ngOnInit() {
-    console.log('🚀 New Arrivals component initialized');
     this.loadNewArrivals();
     this.loadCategories();
   }
 
   private loadNewArrivals() {
     this.isLoading.set(true);
-    console.log('🔄 Loading new arrivals...');
-    
-    // Add timeout to prevent infinite loading
-    setTimeout(() => {
-      if (this.isLoading()) {
-        console.warn('⚠️ Loading timeout - forcing loading to false');
+    setTimeout(() => { if (this.isLoading()) this.isLoading.set(false); }, 10000);
+    this.productService.getNewArrivals(this.selectedCategory() || undefined, 0, 50).subscribe({
+      next: (response) => {
+        this.products.set(Array.isArray(response?.content) ? response.content : []);
         this.isLoading.set(false);
-      }
-    }, 10000); // 10 second timeout
-    
-    this.productService.getNewArrivals(this.selectedCategory() || undefined, 0, 50)
-      .subscribe({
-        next: (response) => {
-          console.log('✅ New arrivals loaded successfully:', response);
-          
-          // Ensure we always have a valid array
-          const products = Array.isArray(response?.content) ? response.content : [];
-          
-          console.log('Setting products array:', products);
-          this.products.set(products);
-          this.isLoading.set(false);
-        },
-        error: (error) => {
-          console.error('❌ Error loading new arrivals:', error);
-          this.isLoading.set(false);
-          this.products.set([]);
-        }
-      });
+      },
+      error: () => { this.isLoading.set(false); this.products.set([]); }
+    });
   }
 
   private loadCategories() {
-    this.productService.getCategories()
-      .subscribe({
-        next: (categories) => {
-          const safeCategories = Array.isArray(categories) ? categories : [];
-          this.categories.set(safeCategories);
-        },
-        error: (error) => {
-          console.error('Error loading categories:', error);
-          this.categories.set([]);
-        }
-      });
+    this.productService.getCategories().subscribe({
+      next: (cats) => this.categories.set(Array.isArray(cats) ? cats : []),
+      error: () => this.categories.set([])
+    });
   }
 
-  onCategoryChange(categoryId: number | null) {
-    console.log('Category changed to:', categoryId);
-    this.selectedCategory.set(categoryId);
-    // لا نحتاج لإعادة تحميل البيانات، الـ effect سيتولى الفلترة
+  onCategoryChange(categoryId: number | null) { this.selectedCategory.set(categoryId); }
+
+  addToCart(product: ProductResponse, e: Event): void {
+    e.stopPropagation();
+    this.cartService.add({
+      productId:    product.id,
+      productName:  product.name,
+      productImage: this.getProductImage(product),
+      categoryName: product.categoryName ?? '',
+      price:        product.price,
+      oldPrice:     product.oldPrice ?? undefined,
+      maxStock:     product.totalStock ?? 0
+    });
   }
 
-  addToCart(product: ProductResponse) {
-    console.log('Added to cart:', product);
-    // Implement add to cart functionality
+  toggleWishlist(product: ProductResponse, e: Event): void {
+    e.stopPropagation();
+    this.wishlistService.toggle({
+      productId:    product.id,
+      productName:  product.name,
+      productImage: this.getProductImage(product),
+      categoryName: product.categoryName ?? '',
+      price:        product.price,
+      oldPrice:     product.oldPrice ?? undefined,
+      totalStock:   product.totalStock ?? 0
+    });
   }
 
-  addToWishlist(product: ProductResponse) {
-    console.log('Added to wishlist:', product);
-    // Implement add to wishlist functionality
-  }
+  isInWishlist(product: ProductResponse): boolean { return this.wishlistService.isInWishlist(product.id); }
 
   getProductImage(product: ProductResponse): string {
-    if (!product || !product.imageUrl) {
-      return '/assets/images/placeholder.jpg'; // صورة افتراضية
-    }
+    if (!product?.imageUrl) return '/assets/images/placeholder.jpg';
     return this.productService.resolveImageUrl(product.imageUrl);
   }
 
   getHoverImage(product: ProductResponse): string | null {
-    if (!product || !product.hoverImageUrl) return null;
+    if (!product?.hoverImageUrl) return null;
     return this.productService.resolveImageUrl(product.hoverImageUrl);
   }
 
   getDiscountPercentage(product: ProductResponse): number {
-    if (!product || !product.oldPrice || !product.price) return 0;
+    if (!product?.oldPrice || !product.price) return 0;
     return Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
   }
 }

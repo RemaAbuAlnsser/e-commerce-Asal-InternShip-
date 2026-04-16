@@ -5,11 +5,15 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HeaderComponent } from './header/header.component';
 import { SettingsService, SiteImage } from '../../services/settings.service';
 import { SiteConfigService } from '../../services/site-config.service';
 import { ProductService } from '../../services/product.service';
 import { CategoryOption, ProductResponse } from '../../services/product.model';
+import { SubscriptionService } from '../../services/subscription.service';
+import { CartService } from '../../services/cart.service';
+import { WishlistService } from '../../services/wishlist.service';
 import { environment } from '../../../environments/environment';
 
 interface CategorySection {
@@ -22,19 +26,44 @@ interface CategorySection {
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, RouterLink],
+  imports: [CommonModule, FormsModule, HeaderComponent, RouterLink],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.css'
 })
 export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
-  router          = inject(Router);
-  private settingsService = inject(SettingsService);
-  siteConfigService = inject(SiteConfigService);
-  private productService  = inject(ProductService);
-  private el              = inject(ElementRef);
-  private platformId      = inject(PLATFORM_ID);
+  router               = inject(Router);
+  private settingsService     = inject(SettingsService);
+  siteConfigService           = inject(SiteConfigService);
+  private productService      = inject(ProductService);
+  private subscriptionService = inject(SubscriptionService);
+  private cartService         = inject(CartService);
+  private wishlistService     = inject(WishlistService);
+  private el                  = inject(ElementRef);
+  private platformId          = inject(PLATFORM_ID);
   private get isBrowser() { return isPlatformBrowser(this.platformId); }
+
+  // ── Newsletter subscribe ──────────────────────────────────────────────────────
+  subscribeEmail  = '';
+  subscribeStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
+  subscribeMsg    = signal('');
+
+  onSubscribe() {
+    const email = this.subscribeEmail.trim();
+    if (!email) return;
+    this.subscribeStatus.set('loading');
+    this.subscriptionService.subscribe(email).subscribe({
+      next: (res) => {
+        this.subscribeStatus.set(res.success ? 'success' : 'error');
+        this.subscribeMsg.set(res.message);
+        if (res.success) this.subscribeEmail = '';
+      },
+      error: () => {
+        this.subscribeStatus.set('error');
+        this.subscribeMsg.set('Something went wrong. Please try again.');
+      }
+    });
+  }
 
   // ── Hero slider ──────────────────────────────────────────────────────────────
   readonly siteImages  = signal<SiteImage[]>([]);
@@ -198,5 +227,35 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   getDiscountPercentage(p: ProductResponse): number {
     if (!p?.oldPrice || !p.price) return 0;
     return Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100);
+  }
+
+  addToCart(p: ProductResponse, e: Event): void {
+    e.stopPropagation();
+    this.cartService.add({
+      productId:    p.id,
+      productName:  p.name,
+      productImage: this.getProductImage(p),
+      categoryName: p.categoryName ?? '',
+      price:        p.price,
+      oldPrice:     p.oldPrice ?? undefined,
+      maxStock:     p.totalStock ?? 0
+    });
+  }
+
+  toggleWishlist(p: ProductResponse, e: Event): void {
+    e.stopPropagation();
+    this.wishlistService.toggle({
+      productId:    p.id,
+      productName:  p.name,
+      productImage: this.getProductImage(p),
+      categoryName: p.categoryName ?? '',
+      price:        p.price,
+      oldPrice:     p.oldPrice ?? undefined,
+      totalStock:   p.totalStock ?? 0
+    });
+  }
+
+  isInWishlist(p: ProductResponse): boolean {
+    return this.wishlistService.isInWishlist(p.id);
   }
 }

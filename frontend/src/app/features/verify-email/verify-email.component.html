@@ -1,0 +1,36 @@
+<div class="verify-page">
+  <div class="verify-card">
+
+    @if (isLoading()) {
+      <div class="state-loading">
+        <div class="spinner"></div>
+        <p>Verifying your email…</p>
+      </div>
+    } @else if (success()) {
+      <div class="state-success">
+        <div class="icon-wrap success">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        </div>
+        <h1>You're subscribed!</h1>
+        <p>{{ message() }}</p>
+        <a routerLink="/" class="btn-home">Go to Store</a>
+      </div>
+    } @else {
+      <div class="state-error">
+        <div class="icon-wrap error">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+        </div>
+        <h1>Verification failed</h1>
+        <p>{{ message() }}</p>
+        <a routerLink="/" class="btn-home">Back to Store</a>
+      </div>
+    }
+
+  </div>
+</div>

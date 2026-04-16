@@ -224,8 +224,8 @@
               {{ availableStock() > 0 ? 'Add to Cart' : 'Out of Stock' }}
             </button>
 
-            <button class="btn-wishlist" (click)="addToWishlist()" title="Add to wishlist">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="btn-wishlist" (click)="toggleWishlist()" [class.wishlisted]="isInWishlist()" title="Add to wishlist">
+              <svg width="20" height="20" viewBox="0 0 24 24" [attr.fill]="isInWishlist() ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
               </svg>
             </button>
@@ -315,15 +315,15 @@
                     </div>
 
                     <!-- Wishlist button -->
-                    <button class="related-wishlist-btn" (click)="addToWishlist(relatedProduct); $event.stopPropagation()" title="Add to Wishlist">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <button class="related-wishlist-btn" (click)="toggleWishlist(relatedProduct); $event.stopPropagation()" [class.wishlisted]="isInWishlist(relatedProduct)" title="Add to Wishlist">
+                      <svg width="14" height="14" viewBox="0 0 24 24" [attr.fill]="isInWishlist(relatedProduct) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2.2">
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                       </svg>
                     </button>
 
                     <!-- Hover overlay: Quick Add -->
-                    <div class="related-overlay">
-                      <button class="related-quick-add" [disabled]="relatedProduct.totalStock === 0" (click)="addToCart(relatedProduct); $event.stopPropagation()">
+                    <div class="related-overlay" (click)="$event.stopPropagation()">
+                      <button class="related-quick-add" [disabled]="relatedProduct.totalStock === 0" (click)="addToCart(relatedProduct)">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                           <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
                           <line x1="3" y1="6" x2="21" y2="6"/>

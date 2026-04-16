@@ -1,0 +1,88 @@
+<div class="wishlist-page">
+  <app-header></app-header>
+
+  <!-- Page Hero -->
+  <div class="page-hero">
+    <div class="container">
+      <h1 class="hero-title">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+        My Wishlist
+      </h1>
+      <p class="hero-sub">{{ wishlist.count() }} saved {{ wishlist.count() === 1 ? 'item' : 'items' }}</p>
+    </div>
+  </div>
+
+  <div class="container page-body">
+
+    @if (wishlist.isEmpty()) {
+      <!-- Empty state -->
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </div>
+        <h2>Your wishlist is empty</h2>
+        <p>Save products you love and find them here later</p>
+        <a routerLink="/" class="btn-shop">Start Shopping</a>
+      </div>
+
+    } @else {
+      <!-- Actions bar -->
+      <div class="actions-bar">
+        <span class="items-label">{{ wishlist.count() }} {{ wishlist.count() === 1 ? 'item' : 'items' }}</span>
+        <button class="btn-clear-all" (click)="wishlist.clear()">Clear All</button>
+      </div>
+
+      <!-- Grid -->
+      <div class="wishlist-grid">
+        @for (item of wishlist.items(); track item.productId) {
+          <div class="wish-card">
+            <div class="wish-image" [routerLink]="['/product', item.productId]" style="cursor:pointer">
+              <img [src]="getImage(item.productImage)" [alt]="item.productName" loading="lazy">
+              <button class="remove-btn" (click)="wishlist.remove(item.productId)" title="Remove from wishlist">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div class="wish-info">
+              <p class="wish-category">{{ item.categoryName }}</p>
+              <h3 class="wish-name">{{ item.productName }}</h3>
+              <div class="wish-pricing">
+                @if (item.oldPrice) {
+                  <span class="old-price">${{ item.oldPrice }}</span>
+                }
+                <span class="current-price">${{ item.price }}</span>
+              </div>
+              <div class="wish-footer">
+                <div class="stock-indicator">
+                  @if (item.totalStock > 0) {
+                    <span class="dot in"></span><span>In Stock</span>
+                  } @else {
+                    <span class="dot out"></span><span class="oos">Sold Out</span>
+                  }
+                </div>
+                <button
+                  class="btn-add-cart"
+                  [disabled]="item.totalStock === 0"
+                  (click)="moveToCart(item)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                  </svg>
+                  Move to Cart
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</div>
