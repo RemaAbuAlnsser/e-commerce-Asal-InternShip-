@@ -3,8 +3,8 @@
   <!-- Header -->
   <div class="page-header">
     <div class="header-text">
-      <h1>Customers</h1>
-      <p>All registered customers and their cumulative purchase totals.</p>
+      <h1>Subscribers</h1>
+      <p>All newsletter subscribers and their verification status.</p>
     </div>
     <button class="btn-refresh" (click)="load()" [disabled]="loading()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -15,7 +15,7 @@
     </button>
   </div>
 
-  <!-- Alert -->
+  <!-- Error -->
   <div class="alert-error" *ngIf="error()">{{ error() }}</div>
 
   <!-- Summary cards -->
@@ -23,42 +23,40 @@
     <div class="summary-card">
       <div class="summary-icon blue">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M17 21V19A4 4 0 0 0 13 15H5A4 4 0 0 0 1 19V21" stroke="currentColor" stroke-width="2"/>
-          <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-          <path d="M23 21V19A4 4 0 0 0 19 15.3" stroke="currentColor" stroke-width="2"/>
-          <path d="M16 3.13A4 4 0 0 1 16 11.87" stroke="currentColor" stroke-width="2"/>
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="2"/>
+          <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2"/>
         </svg>
       </div>
       <div class="summary-info">
-        <span class="summary-value">{{ totalCustomers() }}</span>
-        <span class="summary-label">Total Customers</span>
+        <span class="summary-value">{{ totalSubscribers() }}</span>
+        <span class="summary-label">Total Subscribers</span>
       </div>
     </div>
 
     <div class="summary-card">
       <div class="summary-icon green">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <circle cx="8" cy="21" r="1" stroke="currentColor" stroke-width="2"/>
-          <circle cx="19" cy="21" r="1" stroke="currentColor" stroke-width="2"/>
-          <path d="M2.05 2.05H4L6.2 12.05A2 2 0 0 0 8.17 14H19.05A2 2 0 0 0 21 12.05L22.05 5.05H5.12" stroke="currentColor" stroke-width="2"/>
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2"/>
+          <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2"/>
         </svg>
       </div>
       <div class="summary-info">
-        <span class="summary-value">{{ totalWithOrders() }}</span>
-        <span class="summary-label">Customers with Orders</span>
+        <span class="summary-value">{{ verifiedCount() }}</span>
+        <span class="summary-label">Verified</span>
       </div>
     </div>
 
-    <div class="summary-card highlight">
-      <div class="summary-icon gold">
+    <div class="summary-card">
+      <div class="summary-icon orange">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" stroke-width="2"/>
-          <path d="M17 5H9.5A3.5 3.5 0 0 0 9.5 12H14.5A3.5 3.5 0 0 1 14.5 19H6" stroke="currentColor" stroke-width="2"/>
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2"/>
+          <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2"/>
         </svg>
       </div>
       <div class="summary-info">
-        <span class="summary-value">{{ formatCurrency(grandTotal()) }}</span>
-        <span class="summary-label">Total Sales (All Time)</span>
+        <span class="summary-value">{{ pendingCount() }}</span>
+        <span class="summary-label">Pending Verification</span>
       </div>
     </div>
   </div>
@@ -78,68 +76,68 @@
       >
       <button *ngIf="search()" class="clear-btn" (click)="clearSearch()">✕</button>
     </div>
+    <span class="result-count" *ngIf="search()">
+      {{ filtered().length }} result{{ filtered().length !== 1 ? 's' : '' }}
+    </span>
   </div>
 
-  <!-- Loading spinner -->
+  <!-- Loading -->
   <div class="loading-state" *ngIf="loading()">
     <div class="spinner"></div>
-    <p>Loading customers…</p>
+    <p>Loading subscribers…</p>
   </div>
 
-  <!-- Empty state -->
+  <!-- Empty -->
   <div class="empty-state" *ngIf="!loading() && filtered().length === 0">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-      <path d="M17 21V19A4 4 0 0 0 13 15H5A4 4 0 0 0 1 19V21" stroke="#cbd5e1" stroke-width="2"/>
-      <circle cx="9" cy="7" r="4" stroke="#cbd5e1" stroke-width="2"/>
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#cbd5e1" stroke-width="2"/>
+      <polyline points="22,6 12,13 2,6" stroke="#cbd5e1" stroke-width="2"/>
     </svg>
-    <p>No customers found.</p>
+    <p>{{ search() ? 'No subscribers match "' + search() + '".' : 'No subscribers yet.' }}</p>
   </div>
 
   <!-- Table -->
   <div class="table-wrapper" *ngIf="!loading() && filtered().length > 0">
-    <table class="customers-table">
+    <table class="subscribers-table">
       <thead>
         <tr>
           <th>#</th>
           <th>Name</th>
           <th>Email</th>
-          <th>Provider</th>
           <th>Status</th>
-          <th>Orders</th>
-          <th>Total Spent</th>
+          <th>Verified</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let c of paginated(); trackBy: trackById; let i = index">
+        <tr *ngFor="let s of paginated(); trackBy: trackById; let i = index">
           <td class="td-num">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
           <td>
-            <div class="customer-name">
-              <div class="avatar">{{ c.name.charAt(0).toUpperCase() }}</div>
-              {{ c.name }}
+            <div class="subscriber-name">
+              <div class="avatar">{{ s.name.charAt(0).toUpperCase() }}</div>
+              <span>{{ s.name }}</span>
             </div>
           </td>
-          <td class="td-email">{{ c.email }}</td>
+          <td class="td-email">{{ s.email }}</td>
           <td>
-            <span class="badge" [class.badge-google]="c.provider === 'GOOGLE'" [class.badge-local]="c.provider === 'LOCAL'">
-              {{ c.provider }}
+            <span class="status-dot" [class.active]="s.active" [class.inactive]="!s.active">
+              {{ s.active ? 'Active' : 'Inactive' }}
             </span>
           </td>
           <td>
-            <span class="status-dot" [class.active]="c.active" [class.inactive]="!c.active">
-              {{ c.active ? 'Active' : 'Inactive' }}
+            <span class="verified-badge" [class.verified]="s.verified" [class.pending]="!s.verified">
+              <svg *ngIf="s.verified" width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="2.5"/>
+              </svg>
+              <svg *ngIf="!s.verified" width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2"/>
+                <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              {{ s.verified ? 'Verified' : 'Pending' }}
             </span>
           </td>
-          <td class="td-center">{{ c.totalOrders }}</td>
-          <td class="td-spent">{{ formatCurrency(c.totalSpent) }}</td>
         </tr>
       </tbody>
-      <tfoot>
-        <tr class="total-row">
-          <td colspan="5"></td>
-          <td class="td-center foot-label">{{ totalWithOrders() }} buyers</td>
-          <td class="td-spent foot-total">{{ formatCurrency(grandTotal()) }}</td>
-        </tr>
-      </tfoot>
     </table>
   </div>
 

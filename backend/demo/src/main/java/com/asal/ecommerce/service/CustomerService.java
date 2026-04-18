@@ -1,6 +1,7 @@
 package com.asal.ecommerce.service;
 
 import com.asal.ecommerce.dto.CustomerSummaryResponse;
+import com.asal.ecommerce.dto.SubscriberSummaryResponse;
 import com.asal.ecommerce.enums.Role;
 import com.asal.ecommerce.repository.OrderRepository;
 import com.asal.ecommerce.repository.UserRepository;
@@ -20,6 +21,19 @@ public class CustomerService {
 
     @Autowired private UserRepository  userRepository;
     @Autowired private OrderRepository orderRepository;
+
+    public List<SubscriberSummaryResponse> getAllSubscribers() {
+        return userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.SUBSCRIBER)
+                .map(u -> SubscriberSummaryResponse.builder()
+                        .id(u.getId())
+                        .name(u.getName())
+                        .email(u.getEmail())
+                        .verified(u.isEmailVerified())
+                        .active(u.isActive())
+                        .build())
+                .collect(Collectors.toList());
+    }
 
     public List<CustomerSummaryResponse> getAllCustomers() {
         // Build a map: userId → [totalOrders, totalSpent]

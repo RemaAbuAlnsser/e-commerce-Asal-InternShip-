@@ -17,89 +17,28 @@
 .page-header {
   background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 35%, #f5576c 70%, #f093fb 100%);
   color: white;
-  padding: 6rem 0 7rem;
+  padding: 5rem 0 6rem;
   text-align: center;
   position: relative;
   overflow: hidden;
 }
 
-/* Floating shapes */
-.hero-shapes {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
+/* Gooey text hero sizing */
+.gooey-hero {
+  width: 100%;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.5rem 0 1.5rem;
 }
 
-.shape {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.shape-1 {
-  width: 550px; height: 550px;
-  top: -220px; left: -180px;
-  animation: offerFloat1 10s ease-in-out infinite;
-}
-
-.shape-2 {
-  width: 320px; height: 320px;
-  top: -100px; right: 8%;
-  background: rgba(255, 255, 255, 0.04);
-  animation: offerFloat2 13s ease-in-out infinite;
-}
-
-.shape-3 {
-  width: 180px; height: 180px;
-  bottom: 50px; right: 30%;
-  background: rgba(255, 255, 255, 0.05);
-  animation: offerFloat1 8s ease-in-out infinite reverse;
-}
-
-@keyframes offerFloat1 {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  33% { transform: translate(18px, -22px) rotate(5deg); }
-  66% { transform: translate(-12px, 10px) rotate(-3deg); }
-}
-
-@keyframes offerFloat2 {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(-22px, 16px); }
-}
-
-/* Floating tags */
-.floating-tag {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(10px);
-  padding: 0.4rem 0.9rem;
-  border-radius: 50px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  pointer-events: none;
-}
-
-.tag-1 {
-  top: 20%; left: 6%;
-  animation: tagFloat 6s ease-in-out infinite;
-}
-
-.tag-2 {
-  top: 15%; right: 8%;
-  animation: tagFloat 8s ease-in-out infinite 1.5s;
-}
-
-.tag-3 {
-  bottom: 25%; left: 10%;
-  animation: tagFloat 7s ease-in-out infinite 3s;
-}
-
-@keyframes tagFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+:host ::ng-deep .gooey-hero-text {
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: -2px;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
 }
 
 /* Hero container */
@@ -135,27 +74,7 @@
   50% { transform: rotate(5deg); }
 }
 
-.page-title {
-  font-size: 4.5rem;
-  font-weight: 900;
-  margin: 0 0 1.25rem;
-  letter-spacing: -2px;
-  line-height: 1.05;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-  position: relative;
-  z-index: 1;
-}
 
-.title-accent {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.25);
-  padding: 0 0.2em;
-  border-radius: 8px;
-  text-decoration: underline;
-  text-decoration-color: rgba(255,255,255,0.5);
-  text-decoration-thickness: 3px;
-  text-underline-offset: 6px;
-}
 
 .page-subtitle {
   font-size: 1.2rem;
@@ -165,73 +84,6 @@
   line-height: 1.65;
   position: relative;
   z-index: 1;
-}
-
-/* Offer highlight pill */
-.offer-highlight {
-  position: relative;
-  z-index: 1;
-  margin-bottom: 2rem;
-}
-
-.highlight-text {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.7rem 2.5rem;
-  border-radius: 50px;
-  font-size: 1.4rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 3px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  animation: offerPulse 2.2s ease-in-out infinite;
-  backdrop-filter: blur(8px);
-}
-
-@keyframes offerPulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3); }
-  50% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); }
-}
-
-/* Hero stats bar */
-.hero-stats {
-  display: inline-flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50px;
-  padding: 0.65rem 1.5rem;
-  backdrop-filter: blur(12px);
-  position: relative;
-  z-index: 1;
-  gap: 0;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-  padding: 0 1.25rem;
-}
-
-.stat-value {
-  font-size: 1rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 0.72rem;
-  opacity: 0.8;
-  white-space: nowrap;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 28px;
-  background: rgba(255, 255, 255, 0.3);
-  flex-shrink: 0;
 }
 
 /* Wave separator */

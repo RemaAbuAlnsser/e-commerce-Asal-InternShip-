@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CustomerService, CustomerSummary } from '../../../services/customer.service';
+import { CustomerService, SubscriberSummary } from '../../../services/customer.service';
 
 @Component({
   selector: 'app-subscribers',
@@ -12,13 +12,13 @@ import { CustomerService, CustomerSummary } from '../../../services/customer.ser
 })
 export class SubscribersComponent implements OnInit {
 
-  customers = signal<CustomerSummary[]>([]);
-  loading   = signal(false);
-  error     = signal('');
-  search    = signal('');
+  subscribers = signal<SubscriberSummary[]>([]);
+  loading     = signal(false);
+  error       = signal('');
+  search      = signal('');
 
   currentPage = 1;
-  readonly pageSize = 10;
+  readonly pageSize = 15;
 
   constructor(private customerService: CustomerService) {}
 
@@ -29,13 +29,13 @@ export class SubscribersComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set('');
-    this.customerService.getAll().subscribe({
+    this.customerService.getSubscribers().subscribe({
       next: (data) => {
-        this.customers.set(data);
+        this.subscribers.set(data);
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('Failed to load customers.');
+        this.error.set('Failed to load subscribers.');
         this.loading.set(false);
       }
     });
@@ -43,10 +43,10 @@ export class SubscribersComponent implements OnInit {
 
   filtered = computed(() => {
     const term = this.search().trim().toLowerCase();
-    if (!term) return this.customers();
-    return this.customers().filter(c =>
-      c.name.toLowerCase().includes(term) ||
-      c.email.toLowerCase().includes(term)
+    if (!term) return this.subscribers();
+    return this.subscribers().filter(s =>
+      s.name.toLowerCase().includes(term) ||
+      s.email.toLowerCase().includes(term)
     );
   });
 
@@ -59,16 +59,9 @@ export class SubscribersComponent implements OnInit {
     return this.filtered().slice(start, start + this.pageSize);
   });
 
-  // Grand total: sum of all customers' totalSpent
-  grandTotal = computed(() =>
-    this.customers().reduce((sum, c) => sum + (c.totalSpent ?? 0), 0)
-  );
-
-  totalCustomers = computed(() => this.customers().length);
-
-  totalWithOrders = computed(() =>
-    this.customers().filter(c => c.totalOrders > 0).length
-  );
+  totalSubscribers  = computed(() => this.subscribers().length);
+  verifiedCount     = computed(() => this.subscribers().filter(s => s.verified).length);
+  pendingCount      = computed(() => this.subscribers().filter(s => !s.verified).length);
 
   onSearch(value: string): void {
     this.search.set(value);
@@ -88,14 +81,7 @@ export class SubscribersComponent implements OnInit {
     if (this.currentPage < this.totalPages()) this.currentPage++;
   }
 
-  formatCurrency(value: number): string {
-    return '$' + (value ?? 0).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
-
-  trackById(_: number, c: CustomerSummary): number {
-    return c.id;
+  trackById(_: number, s: SubscriberSummary): number {
+    return s.id;
   }
 }

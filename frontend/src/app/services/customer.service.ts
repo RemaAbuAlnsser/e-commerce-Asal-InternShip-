@@ -13,11 +13,23 @@ export interface CustomerSummary {
   totalSpent: number;
 }
 
+export interface SubscriberSummary {
+  id: number;
+  name: string;
+  email: string;
+  verified: boolean;
+  active: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CustomerService {
   private http = inject(HttpClient);
 
   getAll(): Observable<CustomerSummary[]> {
     return this.http.get<CustomerSummary[]>(`${environment.apiUrl}/admin/customers`);
+  }
+
+  getSubscribers(): Observable<SubscriberSummary[]> {
+    return this.http.get<SubscriberSummary[]>(`${environment.apiUrl}/admin/subscribers`);
   }
 }

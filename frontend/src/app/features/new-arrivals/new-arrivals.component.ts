@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HeaderComponent } from '../landing/header/header.component';
+import { GooeyTextComponent } from '../../shared/gooey-text/gooey-text.component';
 import { ProductService } from '../../services/product.service';
 import { ProductResponse, CategoryOption } from '../../services/product.model';
 import { CartService } from '../../services/cart.service';
@@ -11,7 +12,7 @@ import { WishlistService } from '../../services/wishlist.service';
 @Component({
   selector: 'app-new-arrivals',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, HeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, HeaderComponent, GooeyTextComponent],
   templateUrl: './new-arrivals.component.html',
   styleUrl: './new-arrivals.component.css'
 })

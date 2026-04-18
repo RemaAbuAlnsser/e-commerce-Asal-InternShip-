@@ -319,3 +319,81 @@
   .customers-table th:nth-child(4),
   .customers-table td:nth-child(4) { display: none; }
 }
+
+/* ── Orange summary icon ── */
+.summary-icon.orange { background: #fff7ed; color: #ea580c; }
+
+/* ── Subscribers table ── */
+.subscribers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.subscribers-table thead tr {
+  background: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.subscribers-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.subscribers-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.subscribers-table tbody tr:last-child { border-bottom: none; }
+.subscribers-table tbody tr:hover { background: #f8fafc; }
+
+.subscribers-table td {
+  padding: 0.85rem 1rem;
+  color: #334155;
+  vertical-align: middle;
+}
+
+/* Subscriber name cell */
+.subscriber-name {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 500;
+}
+
+/* Verified badge */
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.verified-badge.verified {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.verified-badge.pending {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+/* Result count chip */
+.result-count {
+  font-size: 0.82rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  white-space: nowrap;
+}

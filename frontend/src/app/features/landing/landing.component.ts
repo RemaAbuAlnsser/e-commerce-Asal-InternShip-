@@ -3,7 +3,8 @@ import {
   signal, inject, PLATFORM_ID, ElementRef
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HeaderComponent } from './header/header.component';
@@ -16,6 +17,8 @@ import { CartService } from '../../services/cart.service';
 import { WishlistService } from '../../services/wishlist.service';
 import { environment } from '../../../environments/environment';
 import { InteractiveImageAccordionComponent } from '../../components/ui/interactive-image-accordion.component';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 interface CategorySection {
   category: CategoryOption;
@@ -34,6 +37,7 @@ interface CategorySection {
 export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   router               = inject(Router);
+  private route               = inject(ActivatedRoute);
   private settingsService     = inject(SettingsService);
   siteConfigService           = inject(SiteConfigService);
   private productService      = inject(ProductService);
@@ -43,6 +47,12 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   private el                  = inject(ElementRef);
   private platformId          = inject(PLATFORM_ID);
   private get isBrowser() { return isPlatformBrowser(this.platformId); }
+
+  // ── Search ────────────────────────────────────────────────────────────────────
+  readonly searchQuery   = signal('');
+  readonly searchResults = signal<ProductResponse[]>([]);
+  readonly searchLoading = signal(false);
+  private routeSub?: Subscription;
 
   // ── Newsletter subscribe ──────────────────────────────────────────────────────
   subscribeEmail  = '';
@@ -81,17 +91,50 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     if (!this.isBrowser) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+
     this.loadSiteImages();
     this.loadCategories();
+
+    this.routeSub = this.route.queryParamMap.subscribe(params => {
+      const q = params.get('q')?.trim() ?? '';
+      this.searchQuery.set(q);
+      if (q) {
+        this.runSearch(q);
+      } else {
+        this.searchResults.set([]);
+      }
+    });
   }
 
   ngAfterViewInit() {
     // Observer will be (re-)created after categories arrive and sections render
   }
 
+  private runSearch(q: string): void {
+    this.searchLoading.set(true);
+    this.productService.search(q, 0, 40).subscribe({
+      next: res => {
+        this.searchResults.set(res.content ?? []);
+        this.searchLoading.set(false);
+      },
+      error: () => {
+        this.searchResults.set([]);
+        this.searchLoading.set(false);
+      }
+    });
+  }
+
+  clearSearch(): void {
+    this.router.navigate(['/'], { queryParams: {} });
+  }
+
   ngOnDestroy() {
+    this.routeSub?.unsubscribe();
     this.stopAutoSlide();
     this.sectionObserver?.disconnect();
+    ScrollTrigger.getAll().forEach(trigger => trigger.kill());
   }
 
   // ── Hero ─────────────────────────────────────────────────────────────────────
@@ -200,6 +243,8 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         if (i !== -1) {
           cur[i] = { ...cur[i], products: res.content ?? [], isLoading: false, isLoaded: true };
           this.categorySections.set(cur);
+          // Setup animations after products are loaded and DOM is updated
+          setTimeout(() => this.setupProductAnimations(), 50);
         }
       },
       error: () => {
@@ -258,5 +303,69 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   isInWishlist(p: ProductResponse): boolean {
     return this.wishlistService.isInWishlist(p.id);
+  }
+
+  // ── GSAP Animations ──────────────────────────────────────────────────────────
+
+  private setupProductAnimations(): void {
+    if (!this.isBrowser) return;
+
+    // Wait for DOM to be ready
+    setTimeout(() => {
+      const productCards = document.querySelectorAll('.product-card');
+      
+      if (productCards.length === 0) return;
+
+      // Set initial state for all product cards
+      gsap.set(productCards, {
+        opacity: 0,
+        y: 50,
+        scale: 0.9
+      });
+
+      // Create scroll-triggered animations for each product card
+      productCards.forEach((card, index) => {
+        gsap.to(card, {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.8,
+          ease: "power2.out",
+          delay: index * 0.1, // Stagger effect
+          scrollTrigger: {
+            trigger: card,
+            start: "top 85%",
+            end: "bottom 15%",
+            toggleActions: "play none none reverse"
+          }
+        });
+      });
+
+      // Animate category headers
+      const categoryHeaders = document.querySelectorAll('.cat-header');
+      categoryHeaders.forEach((header) => {
+        gsap.fromTo(header, 
+          {
+            opacity: 0,
+            x: -30
+          },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.6,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: header,
+              start: "top 90%",
+              end: "bottom 10%",
+              toggleActions: "play none none reverse"
+            }
+          }
+        );
+      });
+
+      // Refresh ScrollTrigger to recalculate positions
+      ScrollTrigger.refresh();
+    }, 100);
   }
 }

@@ -206,7 +206,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (!q) return;
     this.closeSuggestions();
     this.mobileSearchOpen.set(false);
-    this.router.navigate(['/search'], { queryParams: { q } });
+    this.router.navigate(['/'], { queryParams: { q } });
   }
 
   onSearchInput(): void {

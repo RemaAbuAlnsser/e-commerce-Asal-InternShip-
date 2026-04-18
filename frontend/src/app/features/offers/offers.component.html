@@ -1,48 +1,19 @@
 <div class="offers-page">
   <!-- Header with announcement bar and navigation -->
   <app-header></app-header>
-  
+
   <!-- Page Hero -->
   <div class="page-header">
-    <!-- Decorative background elements -->
-    <div class="hero-shapes">
-      <div class="shape shape-1"></div>
-      <div class="shape shape-2"></div>
-      <div class="shape shape-3"></div>
-    </div>
-    <!-- Floating tags -->
-    <div class="floating-tag tag-1">🔥 Hot Deal</div>
-    <div class="floating-tag tag-2">⚡ Flash Sale</div>
-    <div class="floating-tag tag-3">🎁 Free Gift</div>
-
     <div class="container hero-container">
-      <div class="hero-badge">
-        <span class="badge-fire">🔥</span>
-        Limited Time Offers
-      </div>
-      <h1 class="page-title">Special <span class="title-accent">Offers</span></h1>
-      <p class="page-subtitle">Unbeatable deals on top products — grab them before they're gone</p>
+      
+      <app-gooey-text
+        [texts]="['Hot Deals', 'Big Savings', 'Flash Sales', 'Up to 50% OFF', 'Best Prices']"
+        [morphTime]="1.2"
+        [cooldownTime]="0.3"
+        className="gooey-hero"
+        textClassName="gooey-hero-text"
+      />
 
-      <div class="offer-highlight">
-        <span class="highlight-text">Up to 50% OFF</span>
-      </div>
-
-      <div class="hero-stats">
-        <div class="stat-item">
-          <span class="stat-value">50%</span>
-          <span class="stat-label">Max Discount</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-value">⚡</span>
-          <span class="stat-label">Flash Prices</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-value">🛡️</span>
-          <span class="stat-label">Safe Checkout</span>
-        </div>
-      </div>
     </div>
 
     <!-- Wave separator -->
@@ -59,7 +30,7 @@
       <div class="filter-bar">
         <h3>Filter by Category:</h3>
         <div class="category-filters">
-          <button 
+          <button
             class="filter-btn"
             [class.active]="selectedCategory() === null"
             (click)="onCategoryChange(null)"
@@ -67,7 +38,7 @@
             All Categories
           </button>
           @for (category of (categories() || []); track category.id) {
-            <button 
+            <button
               class="filter-btn"
               [class.active]="selectedCategory() === category.id"
               (click)="onCategoryChange(category.id)"
