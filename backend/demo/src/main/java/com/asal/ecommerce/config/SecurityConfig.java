@@ -60,6 +60,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
                  // Allow order creation without authentication
                  .requestMatchers(HttpMethod.GET,"/api/orders/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/chat").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/subscribe").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/subscribe/verify").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/subscribe/login").permitAll()

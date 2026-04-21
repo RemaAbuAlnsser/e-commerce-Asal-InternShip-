@@ -17,6 +17,7 @@ import { CartService } from '../../services/cart.service';
 import { WishlistService } from '../../services/wishlist.service';
 import { environment } from '../../../environments/environment';
 import { InteractiveImageAccordionComponent } from '../../components/ui/interactive-image-accordion.component';
+import { AiChatComponent } from '../ai-chat/ai-chat.component';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -30,7 +31,7 @@ interface CategorySection {
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, FormsModule, HeaderComponent, RouterLink, InteractiveImageAccordionComponent],
+  imports: [CommonModule, FormsModule, HeaderComponent, RouterLink, InteractiveImageAccordionComponent, AiChatComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.css'
 })
